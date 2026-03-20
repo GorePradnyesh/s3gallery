@@ -1,0 +1,17 @@
+Vision: an iOS application that helps me view my content like photos and videos on my iPhone and iPad. The application is Sleek and fast and looks Modern.
+
+Details: 
+1. I don't trust marketplace applications to not store my credentials or leak out my tokens. I want to build something of my own. 
+2. The additional benefit here is I want to learn how to use Claude code in quickly iterating over concepts and reach final production ready iOS application.
+
+High level user story:
+- I log into the app with my non-root access credentials. Maybe an IAM user or maybe credtials. 
+- It should be user friendly. It should store the credentialsl termporarily / until expiry in a safe and secure manner. 
+- The app should only have access to specific buckets and assets which are accessible by the credentials used to log in.
+- The app should be read only. It should not be allowed to move, delete or upload assets. At least not in the first iteration. 
+- It should have a good browser view and user should be able to explore the buckets and assets accessible to the user as file browser.
+- 
+
+Architecture: TBD
+Testing: TBD
+
