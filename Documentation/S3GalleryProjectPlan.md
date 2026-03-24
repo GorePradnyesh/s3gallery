@@ -1,0 +1,363 @@
+Plan to implement                                                                                                                                                                       
+                                                                                                                                                                                        
+S3Gallery iOS App — Project Plan                                                                                                                                                        
+                                                                                                                                                                                        
+Context                                                                                                                                                                                 
+                                                                                                                                                                                        
+The user wants a personal iOS app to browse and view private S3 content (photos, videos, PDFs, audio, and other files) directly from iPhone and iPad. Marketplace apps are distrusted   
+due to credential leak risk, so this is a custom-built app sideloaded via Xcode for personal use. The project is also a learning exercise in using Claude Code for rapid iteration      
+toward production quality.                                                                                                                                                              
+                                                                                                                                                                                        
+First execution step: Copy this plan to Documentation/S3galleryProjectPlan.md in the project repo.                                                                                      
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Confirmed Requirements                                                                                                                                                                  
+                                                                                                                                                                                        
+┌────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────┐                                                       
+│     Dimension      │                                                 Decision                                                 │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Platform           │ iPhone + iPad, iOS 17+, personal use (Xcode sideload)                                                    │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ UI Framework       │ SwiftUI                                                                                                  │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ AWS Auth           │ IAM Access Key ID + Secret Access Key                                                                    │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Accounts           │ Single account at a time                                                                                 │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Access             │ Read-only S3                                                                                             │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ AWS Regions        │ Single region, user-configurable on login                                                                │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ File Types         │ Photos, Videos (native), PDFs (PDFKit), Audio (AVFoundation), all other files (QuickLook + generic icon) │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Cache              │ Thumbnails only, configurable max size, cleared on logout                                                │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Credential Storage │ iOS Keychain (this-device-only)                                                                          │                                                       
+├────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                       
+│ Distribution       │ Xcode direct install (no App Store)                                                                      │                                                       
+└────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────┘                                                       
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Architecture                                                                                                                                                                            
+                                                                                                                                                                                        
+Tech Stack                                                                                                                                                                              
+                                                                                                                                                                                        
+- Language: Swift 5.9+                                                                                                                                                                  
+- UI: SwiftUI                                                                                                                                                                           
+- AWS SDK: aws-sdk-swift via Swift Package Manager                                                                                                                                      
+- Credential storage: iOS Keychain via Security framework                                                                                                                               
+- Media playback: AVKit, AVFoundation                                                                                                                                                   
+- PDF viewing: PDFKit                                                                                                                                                                   
+- Generic file preview: QuickLook (QLPreviewController)                                                                                                                                 
+- Thumbnail cache: URLCache (disk) + NSCache (in-memory)                                                                                                                                
+                                                                                                                                                                                        
+Project Structure                                                                                                                                                                       
+                                                                                                                                                                                        
+s3gallery/                                                                                                                                                                              
+├── Documentation/                                                                                                                                                                      
+│   └── S3galleryProjectPlan.md       ← This document (source of truth)                                                                                                                 
+└── S3Gallery/                        ← Xcode project root                                                                                                                              
+    ├── S3GalleryApp.swift                                                                                                                                                              
+    ├── Models/                                                                                                                                                                         
+    │   ├── Credentials.swift         ← Value type: accessKeyId, secretAccessKey, region                                                                                                
+    │   ├── S3Item.swift              ← Enum: .folder / .file with metadata                                                                                                             
+    │   └── BrowseState.swift         ← Current bucket + prefix path                                                                                                                    
+    ├── Services/                                                                                                                                                                       
+    │   ├── S3ServiceProtocol.swift   ← Protocol enabling mocking in tests                                                                                                              
+    │   ├── S3Service.swift           ← aws-sdk-swift implementation                                                                                                                    
+    │   ├── CredentialsService.swift  ← Keychain read/write/delete                                                                                                                      
+    │   └── CacheService.swift        ← Thumbnail disk cache management                                                                                                                 
+    ├── Views/                                                                                                                                                                          
+    │   ├── Auth/                                                                                                                                                                       
+    │   │   └── LoginView.swift                                                                                                                                                         
+    │   ├── Browser/                                                                                                                                                                    
+    │   │   ├── BrowserView.swift     ← NavigationStack + toolbar                                                                                                                       
+    │   │   ├── BrowserListView.swift                                                                                                                                                   
+    │   │   ├── BrowserGridView.swift ← LazyVGrid thumbnails                                                                                                                            
+    │   │   ├── BrowserToolbar.swift  ← View mode, sort, breadcrumb                                                                                                                     
+    │   │   └── S3ItemRow.swift       ← Shared row/cell component                                                                                                                       
+    │   ├── Viewer/                                                                                                                                                                     
+    │   │   ├── PhotoViewer.swift     ← Full-screen + pinch zoom                                                                                                                        
+    │   │   ├── VideoPlayerView.swift ← AVKit VideoPlayer                                                                                                                               
+    │   │   ├── PDFViewerView.swift   ← PDFKit UIViewRepresentable                                                                                                                      
+    │   │   ├── AudioPlayerView.swift ← AVFoundation custom UI                                                                                                                          
+    │   │   └── GenericFileView.swift ← QuickLook fallback                                                                                                                              
+    │   └── Settings/                                                                                                                                                                   
+    │       └── SettingsView.swift                                                                                                                                                      
+    ├── ViewModels/                                                                                                                                                                     
+    │   ├── AuthViewModel.swift                                                                                                                                                         
+    │   ├── BrowserViewModel.swift                                                                                                                                                      
+    │   └── ViewerViewModel.swift                                                                                                                                                       
+    └── Utilities/                                                                                                                                                                      
+        └── FileTypeDetector.swift    ← UTType/extension → viewer routing                                                                                                               
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Feature Breakdown                                                                                                                                                                       
+                                                                                                                                                                                        
+1. Authentication                                                                                                                                                                       
+                                                                                                                                                                                        
+- Login screen: Fields for AWS Access Key ID, Secret Access Key, and AWS Region (e.g. us-east-1).                                                                                       
+- On submit: call S3Service.listBuckets() to validate credentials. Show inline error if invalid.                                                                                        
+- On success: store credentials in Keychain with kSecAttrAccessibleWhenUnlockedThisDeviceOnly.                                                                                          
+- App launch: check Keychain for existing credentials → skip login if found.                                                                                                            
+- Logout: delete credentials from Keychain, clear thumbnail disk cache, navigate to login.                                                                                              
+                                                                                                                                                                                        
+2. S3 File Browser                                                                                                                                                                      
+                                                                                                                                                                                        
+- Bucket list: ListBuckets → display accessible buckets as top-level folder items.                                                                                                      
+- Folder navigation: ListObjectsV2 with Delimiter: "/" and Prefix to simulate folders.                                                                                                  
+  - Common prefixes → folder items.                                                                                                                                                     
+  - Object keys → file items.                                                                                                                                                           
+- Breadcrumb bar: bucket / folder / subfolder, tappable segments to navigate up.                                                                                                        
+- View modes (toolbar toggle):                                                                                                                                                          
+  - List: name, type icon, size, last-modified date.                                                                                                                                    
+  - Grid: thumbnail (or type icon), filename caption.                                                                                                                                   
+- Sorting: by name (A–Z, Z–A) and by date (newest/oldest first).                                                                                                                        
+- Pull-to-refresh on folder contents.                                                                                                                                                   
+                                                                                                                                                                                        
+3. File Viewing                                                                                                                                                                         
+                                                                                                                                                                                        
+┌──────────────────────────────────────────┬────────────────────┬─────────────────────────────────────────────────────────────────┐                                                     
+│                File Type                 │     Detection      │                             Viewer                              │                                                     
+├──────────────────────────────────────────┼────────────────────┼─────────────────────────────────────────────────────────────────┤                                                     
+│ Image (JPEG, PNG, HEIC, GIF, WebP, TIFF) │ UTType / extension │ PhotoViewer — streaming via presigned URL, pinch-to-zoom        │                                                     
+├──────────────────────────────────────────┼────────────────────┼─────────────────────────────────────────────────────────────────┤                                                     
+│ Video (MP4, MOV, M4V)                    │ UTType / extension │ VideoPlayerView — AVKit VideoPlayer with presigned URL          │                                                     
+├──────────────────────────────────────────┼────────────────────┼─────────────────────────────────────────────────────────────────┤                                                     
+│ PDF                                      │ .pdf extension     │ PDFViewerView — PDFView wrapped in UIViewRepresentable          │                                                     
+├──────────────────────────────────────────┼────────────────────┼─────────────────────────────────────────────────────────────────┤                                                     
+│ Audio (MP3, AAC, FLAC, WAV, M4A)         │ UTType / extension │ AudioPlayerView — AVAudioPlayer with play/pause/scrub UI        │                                                     
+├──────────────────────────────────────────┼────────────────────┼─────────────────────────────────────────────────────────────────┤                                                     
+│ Other                                    │ fallback           │ GenericFileView — QLPreviewController with downloaded temp file │                                                     
+└──────────────────────────────────────────┴────────────────────┴─────────────────────────────────────────────────────────────────┘                                                     
+                                                                                                                                                                                        
+- Media playback uses presigned URLs (15-minute TTL) generated client-side. No data proxy.                                                                                              
+                                                                                                                                                                                        
+4. Thumbnail Cache                                                                                                                                                                      
+                                                                                                                                                                                        
+- Thumbnails generated at display time from image data or a placeholder icon.                                                                                                           
+- Stored on disk in URLCache keyed by bucket/objectKey?thumb.                                                                                                                           
+- In-memory NSCache layer for fast scroll performance.                                                                                                                                  
+- Configurable max disk size (default 200 MB, adjustable in Settings).                                                                                                                  
+- Eviction: LRU — oldest entries removed when limit is approached.                                                                                                                      
+- Logout clears the entire cache directory.                                                                                                                                             
+                                                                                                                                                                                        
+5. Settings Screen                                                                                                                                                                      
+                                                                                                                                                                                        
+- Displays current account (Key ID prefix, region).                                                                                                                                     
+- Cache usage indicator (e.g. "43 MB / 200 MB").                                                                                                                                        
+- Slider/stepper to adjust max cache size.                                                                                                                                              
+- "Clear Cache" button.                                                                                                                                                                 
+- "Logout" button (clears cache + credentials + navigates to login).                                                                                                                    
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Security Notes                                                                                                                                                                          
+                                                                                                                                                                                        
+- Credentials stored in Keychain only; never in UserDefaults, files, or logs.                                                                                                           
+- No analytics, no telemetry, no third-party SDKs beyond aws-sdk-swift.                                                                                                                 
+- Read-only access enforced at AWS IAM policy level.                                                                                                                                    
+- Presigned URLs have short TTL (15 min) and are never persisted.                                                                                                                       
+- Cache stores thumbnails only — no full file content retained.                                                                                                                         
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Testing Strategy                                                                                                                                                                        
+                                                                                                                                                                                        
+Framework Choices                                                                                                                                                                       
+                                                                                                                                                                                        
+┌──────────────────────┬─────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────┐                           
+│        Layer         │            Framework            │                                            Rationale                                             │                           
+├──────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤                           
+│ Unit tests           │ Swift Testing                   │ Modern macro-based framework, parallel by default, excellent error messages. iOS 17+ compatible. │                           
+├──────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤                           
+│ Integration tests    │ Swift Testing (separate target) │ Same framework, separate target run on-demand with real AWS credentials.                         │                           
+├──────────────────────┼─────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────┤                           
+│ UI / simulator tests │ XCUITest                        │ Ships with Xcode, no extra dependencies. Architected for future Maestro expansion.               │                           
+└──────────────────────┴─────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────┘                           
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Test Targets                                                                                                                                                                            
+                                                                                                                                                                                        
+S3GalleryTests (Unit — runs always, offline)                                                                                                                                            
+                                                                                                                                                                                        
+Uses protocol-based mocking. S3Service conforms to S3ServiceProtocol; tests inject MockS3Service.                                                                                       
+                                                                                                                                                                                        
+┌─────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────┐                                                            
+│       Test Suite        │                                         What It Covers                                         │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ AuthViewModelTests      │ Login state machine: idle → loading → success/failure; credential validation rules             │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ CredentialsServiceTests │ Keychain write, read, delete (using a mock Keychain wrapper)                                   │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ S3ServiceMockTests      │ BrowserViewModel + ViewerViewModel behavior against MockS3Service responses                    │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ CacheServiceTests       │ Thumbnail insert, retrieval, eviction when size limit exceeded, logout clear                   │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ BrowserViewModelTests   │ Navigation (enter bucket, enter folder, breadcrumb pop), sort ordering, folder/file separation │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ ViewerViewModelTests    │ Presign URL construction, file type routing logic                                              │                                                            
+├─────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤                                                            
+│ FileTypeDetectorTests   │ Extension/UTType → viewer category mapping for all supported + unsupported types               │                                                            
+└─────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────┘                                                            
+                                                                                                                                                                                        
+S3GalleryIntegrationTests (Real AWS — on-demand)                                                                                                                                        
+                                                                                                                                                                                        
+Run with xcodebuild -scheme S3GalleryIntegration -destination .... Credentials loaded from environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION (never committed).
+ Requires a dedicated read-only test bucket with fixture files.                                                                                                                         
+                                                                                                                                                                                        
+┌───────────────────────────┬─────────────────────────────────────────────────────────────┐                                                                                             
+│        Test Suite         │                       What It Covers                        │                                                                                             
+├───────────────────────────┼─────────────────────────────────────────────────────────────┤                                                                                             
+│ S3ServiceIntegrationTests │ Real listBuckets, listObjects, presignedURL against live S3 │                                                                                             
+└───────────────────────────┴─────────────────────────────────────────────────────────────┘                                                                                             
+                                                                                                                                                                                        
+S3GalleryUITests (XCUITest — simulator)                                                                                                                                                 
+                                                                                                                                                                                        
+Run against the app in a "test mode" where MockS3Service is injected via a launch argument. No real AWS credentials needed.                                                             
+                                                                                                                                                                                        
+┌─────────────────┬──────────────────────────────────────────────────────────────────────────────────┐                                                                                  
+│    Test Flow    │                                  What It Covers                                  │                                                                                  
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────┤                                                                                  
+│ LoginFlowTests  │ Enter credentials → success navigates to browser; invalid credentials show error │                                                                                  
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────┤                                                                                  
+│ BrowseFlowTests │ Tap bucket → enter folder → navigate breadcrumb back; switch list/grid views     │                                                                                  
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────┤                                                                                  
+│ ViewerFlowTests │ Tap image item → photo viewer opens; tap back → returns to browser               │                                                                                  
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────┤                                                                                  
+│ LogoutFlowTests │ Logout → navigates to login; re-launch without credentials shows login           │                                                                                  
+└─────────────────┴──────────────────────────────────────────────────────────────────────────────────┘                                                                                  
+                                                                                                                                                                                        
+Maestro (Future Extensibility)                                                                                                                                                          
+                                                                                                                                                                                        
+Maestro YAML flows can be added at Tests/MaestroFlows/. The folder will be created in Phase 0 as a placeholder. Maestro runs against a real simulator build and can be integrated with  
+an MCP server for Claude-driven test execution in future sessions.                                                                                                                      
+                                                                                                                                                                                        
+Tests/                                                                                                                                                                                  
+├── MaestroFlows/           ← Placeholder, ready for Maestro YAML flows                                                                                                                 
+│   └── README.md           ← Setup instructions for Maestro CLI                                                                                                                        
+└── IntegrationConfig/                                                                                                                                                                  
+    └── .env.example        ← Template for integration test credentials                                                                                                                 
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Phase Gates (must pass before proceeding to next phase)                                                                                                                                 
+                                                                                                                                                                                        
+Each phase is gated by:                                                                                                                                                                 
+1. All unit tests for new code pass (run swift test or Xcode Test navigator).                                                                                                           
+2. Manual smoke test in iOS Simulator per the checklist below.                                                                                                                          
+                                                                                                                                                                                        
+┌─────────────┬──────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────┐          
+│    Phase    │                  Unit Test Gate                  │                                             Manual Smoke Test                                             │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 0 — Setup   │ Project builds with no warnings                  │ App launches in simulator, shows a placeholder screen                                                     │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 1 — Auth    │ AuthViewModelTests, CredentialsServiceTests pass │ Login with real IAM credentials succeeds; re-launch skips login; logout returns to login                  │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 2 — Browser │ BrowserViewModelTests, S3ServiceMockTests pass   │ Real S3 bucket browses; list and grid views render; breadcrumb navigates correctly                        │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 3 — Viewers │ ViewerViewModelTests, FileTypeDetectorTests pass │ Open a real photo, video, PDF, audio file, and an unknown file type in correct viewers                    │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 4 — Cache   │ CacheServiceTests pass                           │ Grid thumbnails load from cache on second visit; logout clears cache (verify size drops to 0 in Settings) │          
+├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
+│ 5 — Polish  │ All test suites green                            │ iPad layout uses split view; dark mode correct; error states display properly                             │          
+└─────────────┴──────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────┘          
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Implementation Phases                                                                                                                                                                   
+                                                                                                                                                                                        
+Phase 0 — Xcode Project Setup                                                                                                                                                           
+                                                                                                                                                                                        
+- Create Xcode project (S3Gallery, SwiftUI, iOS 17+).                                                                                                                                   
+- Add aws-sdk-swift via Swift Package Manager (S3 module only).                                                                                                                         
+- Create S3GalleryTests, S3GalleryIntegrationTests, S3GalleryUITests targets.                                                                                                           
+- Create Tests/MaestroFlows/ and Tests/IntegrationConfig/.env.example.                                                                                                                  
+- Set up folder structure as per architecture diagram above.                                                                                                                            
+                                                                                                                                                                                        
+Phase 1 — Authentication                                                                                                                                                                
+                                                                                                                                                                                        
+- Credentials model + CredentialsService (Keychain CRUD).                                                                                                                               
+- S3ServiceProtocol + S3Service skeleton with listBuckets() for validation.                                                                                                             
+- MockS3Service for unit tests.                                                                                                                                                         
+- AuthViewModel + LoginView.                                                                                                                                                            
+- App root: S3GalleryApp.swift shows LoginView or BrowserView based on Keychain state.                                                                                                  
+- Unit tests: AuthViewModelTests, CredentialsServiceTests.                                                                                                                              
+                                                                                                                                                                                        
+Phase 2 — S3 File Browser                                                                                                                                                               
+                                                                                                                                                                                        
+- S3Item model + BrowseState.                                                                                                                                                           
+- S3Service: listBuckets(), listObjects(bucket:prefix:), presignedURL(for:ttl:).                                                                                                        
+- BrowserViewModel: loading state, navigation stack, sorting.                                                                                                                           
+- BrowserView, BrowserListView, BrowserGridView, BrowserToolbar, S3ItemRow.                                                                                                             
+- Unit tests: BrowserViewModelTests, S3ServiceMockTests.                                                                                                                                
+- UI tests: LoginFlowTests, BrowseFlowTests.                                                                                                                                            
+                                                                                                                                                                                        
+Phase 3 — File Viewing                                                                                                                                                                  
+                                                                                                                                                                                        
+- FileTypeDetector utility.                                                                                                                                                             
+- ViewerViewModel: presign + download logic.                                                                                                                                            
+- PhotoViewer, VideoPlayerView, PDFViewerView, AudioPlayerView, GenericFileView.                                                                                                        
+- Viewer routing from BrowserView on item tap.                                                                                                                                          
+- Unit tests: ViewerViewModelTests, FileTypeDetectorTests.                                                                                                                              
+- UI tests: ViewerFlowTests.                                                                                                                                                            
+                                                                                                                                                                                        
+Phase 4 — Thumbnail Cache                                                                                                                                                               
+                                                                                                                                                                                        
+- CacheService: URLCache-backed disk cache, NSCache in-memory layer, LRU eviction.                                                                                                      
+- Async thumbnail loading in BrowserGridView cells.                                                                                                                                     
+- Cache size enforcement and logout clearing.                                                                                                                                           
+- Unit tests: CacheServiceTests.                                                                                                                                                        
+                                                                                                                                                                                        
+Phase 5 — Settings & Polish                                                                                                                                                             
+                                                                                                                                                                                        
+- SettingsView: cache usage, size control, logout.                                                                                                                                      
+- iPad layout (NavigationSplitView — sidebar for buckets, detail for contents).                                                                                                         
+- Accessibility (Dynamic Type, VoiceOver labels on all interactive elements).                                                                                                           
+- Dark mode (automatic via SwiftUI semantic colors + SF Symbols).                                                                                                                       
+- Loading skeletons / shimmer placeholder states.                                                                                                                                       
+- Error states: invalid credentials, no network, access denied, empty bucket.                                                                                                           
+- UI tests: LogoutFlowTests.                                                                                                                                                            
+- Integration test run (S3GalleryIntegrationTests) as final validation.                                                                                                                 
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Key Files                                                                                                                                                                               
+                                                                                                                                                                                        
+┌────────────────────────────────────────────────┬──────────────────────────────────────────┐                                                                                           
+│                      File                      │                 Purpose                  │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Models/Credentials.swift             │ accessKeyId, secretAccessKey, region     │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Models/S3Item.swift                  │ .folder / .file enum with metadata       │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Services/S3ServiceProtocol.swift     │ Protocol for testability                 │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Services/S3Service.swift             │ aws-sdk-swift S3Client wrapper           │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Services/CredentialsService.swift    │ Keychain CRUD                            │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Services/CacheService.swift          │ URLCache + NSCache thumbnail management  │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Views/Auth/LoginView.swift           │ Login form                               │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Views/Browser/BrowserView.swift      │ NavigationStack + toolbar + routing      │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/ViewModels/AuthViewModel.swift       │ Login state, validation, Keychain writes │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/ViewModels/BrowserViewModel.swift    │ S3 listing, navigation, sort             │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/ViewModels/ViewerViewModel.swift     │ Presign, download, file type routing     │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ S3Gallery/Utilities/FileTypeDetector.swift     │ Extension/UTType → viewer category       │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ Tests/S3GalleryTests/Mocks/MockS3Service.swift │ In-memory mock for unit tests            │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ Tests/IntegrationConfig/.env.example           │ Template for real AWS credentials        │                                                                                           
+├────────────────────────────────────────────────┼──────────────────────────────────────────┤                                                                                           
+│ Tests/MaestroFlows/README.md                   │ Maestro setup instructions               │                                                                                           
+└────────────────────────────────────────────────┴──────────────────────────────────────────┘                                                                                           
+                                                                                                                                                                                        
+---                                                                                                                                                                                     
+Subagent Handoff Notes                                                                                                                                                                  
+                                                                                                                                                                                        
+- Product Manager: Requirements are locked. MVP = Phases 0–3 (full browsing + viewing). Phases 4–5 add cache and polish. Phase gate = unit tests green + manual simulator smoke test.   
+- Designer: Use SwiftUI semantic colors (Color.primary, .secondary, .background) for automatic dark/light. All icons from SF Symbols. Toolbar follows NavigationStack conventions. Grid:
+ 3 columns on iPhone, 4–5 on iPad. Viewers use .fullScreenCover. Minimal chrome — content first.                                                                                        
+- iOS Developer: Add aws-sdk-swift via SPM, import AWSS3. Use S3Client with StaticCredentialsProvider(credentials:). Presigned URLs via S3Presigner. Define S3ServiceProtocol before    
+implementing S3Service to keep unit tests offline. Minimum deployment target: iOS 17.0, Xcode 15+.

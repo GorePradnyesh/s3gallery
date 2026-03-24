@@ -9,8 +9,12 @@ High level user story:
 - It should be user friendly. It should store the credentialsl termporarily / until expiry in a safe and secure manner. 
 - The app should only have access to specific buckets and assets which are accessible by the credentials used to log in.
 - The app should be read only. It should not be allowed to move, delete or upload assets. At least not in the first iteration. 
-- It should have a good browser view and user should be able to explore the buckets and assets accessible to the user as file browser.
-- 
+- It should have a good browsing experience and user should be able to explore the buckets and assets accessible to the user as file browser.
+- Photos and videos supported natively on the device should be viewable / playable using native frameworks.
+- Maintain a small configurable cache of files, possibly decimated so that repeat playbacks / views do not incur network traffic. The cache should not exceed an upper limit. Logging out clears the local cache for the account. 
+- The path of the asset in the bucket should be represented as a folder in the file browser. 
+- In the file browser allow for list, details, thumbnails view etc which is a familiar form of navigation in the OS file browser. 
+- The look and feel of the UI should be minimal, sleek and modern. 
 
 Architecture: TBD
 Testing: TBD
