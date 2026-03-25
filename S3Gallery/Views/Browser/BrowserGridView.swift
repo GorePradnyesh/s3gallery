@@ -30,12 +30,12 @@ private struct GridCell: View {
 
     var body: some View {
         ZStack {
+            Color(.secondarySystemBackground)
             if let thumb = thumbnail {
                 Image(uiImage: thumb)
                     .resizable()
-                    .scaledToFill()
+                    .scaledToFit()
             } else {
-                Color(.secondarySystemBackground)
                 VStack(spacing: 4) {
                     if isLoading {
                         ProgressView()
@@ -89,12 +89,14 @@ private struct GridCell: View {
 // MARK: - UIImage thumbnail helper
 
 private extension UIImage {
-    func thumbnailScaled(to size: CGSize) async -> UIImage {
+    func thumbnailScaled(to maxSize: CGSize) async -> UIImage {
         await withCheckedContinuation { continuation in
             Task.detached(priority: .utility) {
-                let renderer = UIGraphicsImageRenderer(size: size)
+                let scale = min(maxSize.width / self.size.width, maxSize.height / self.size.height)
+                let scaledSize = CGSize(width: self.size.width * scale, height: self.size.height * scale)
+                let renderer = UIGraphicsImageRenderer(size: scaledSize)
                 let thumb = renderer.image { _ in
-                    self.draw(in: CGRect(origin: .zero, size: size))
+                    self.draw(in: CGRect(origin: .zero, size: scaledSize))
                 }
                 continuation.resume(returning: thumb)
             }
