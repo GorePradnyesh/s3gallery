@@ -9,9 +9,11 @@ enum UITestArgs {
     static var noKeychain:   Bool { CommandLine.arguments.contains("--no-keychain") }
     static var mockSuccess:  Bool { CommandLine.arguments.contains("--mock-s3-success") }
     static var mockFailure:  Bool { CommandLine.arguments.contains("--mock-s3-failure") }
-    static var mockReadOnly:      Bool { CommandLine.arguments.contains("--mock-read-only") }
-    static var autoUpload:        Bool { CommandLine.arguments.contains("--auto-upload") }
-    static var mockUploadFailure: Bool { CommandLine.arguments.contains("--mock-upload-failure") }
+    static var mockReadOnly:        Bool { CommandLine.arguments.contains("--mock-read-only") }
+    static var autoUpload:          Bool { CommandLine.arguments.contains("--auto-upload") }
+    static var mockUploadFailure:   Bool { CommandLine.arguments.contains("--mock-upload-failure") }
+    static var autoStage:           Bool { CommandLine.arguments.contains("--auto-stage") }
+    static var mockPartialFailure:  Bool { CommandLine.arguments.contains("--mock-partial-failure") }
 }
 
 // MARK: - In-process mock S3 service for UI tests
@@ -58,9 +60,15 @@ final class UITestMockS3Service: S3ServiceProtocol {
         return !UITestArgs.mockReadOnly
     }
 
+    private var uploadCallCount = 0
+
     func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws {
         guard shouldSucceed else { throw UITestError.invalidCredentials }
         if UITestArgs.mockUploadFailure { throw UITestError.uploadFailed }
+        if UITestArgs.mockPartialFailure {
+            uploadCallCount += 1
+            if uploadCallCount == 2 { throw UITestError.uploadFailed }
+        }
     }
 }
 

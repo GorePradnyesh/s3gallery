@@ -10,8 +10,15 @@ final class MockS3Service: S3ServiceProtocol {
     var checkWriteAccessResult: Result<Bool, Error> = .success(true)
     var uploadObjectResult: Result<Void, Error> = .success(())
 
+    /// Per-call result queue — consumed in order; falls back to `uploadObjectResult` when empty.
+    var uploadObjectResults: [Result<Void, Error>] = []
+
+    /// Optional simulated async delay (seconds) added to each upload call.
+    var uploadObjectDelay: TimeInterval = 0
+
     // MARK: - Call tracking
 
+    private let lock = NSLock()
     private(set) var listBucketsCallCount = 0
     private(set) var listObjectsCalls: [(bucket: String, prefix: String)] = []
     private(set) var presignedURLCalls: [(item: S3FileItem, ttl: TimeInterval)] = []
@@ -41,8 +48,19 @@ final class MockS3Service: S3ServiceProtocol {
     }
 
     func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws {
+        if uploadObjectDelay > 0 {
+            try await Task.sleep(nanoseconds: UInt64(uploadObjectDelay * 1_000_000_000))
+        }
+        let result: Result<Void, Error>
+        lock.lock()
         uploadObjectCalls.append((bucket, key, contentType))
-        return try uploadObjectResult.get()
+        if uploadObjectResults.isEmpty {
+            result = uploadObjectResult
+        } else {
+            result = uploadObjectResults.removeFirst()
+        }
+        lock.unlock()
+        return try result.get()
     }
 
     // MARK: - Helpers for test setup

@@ -15,6 +15,7 @@
 		151FD9CA6B20BD789F59C78F /* ViewerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 157673D547C21A0234C6E9D7 /* ViewerViewModel.swift */; };
 		1895D3A17E4E74777F59F95F /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151BDBF6130FF71FAC09E0CA /* UITestSupport.swift */; };
 		19867C2FD6DE067FA0836D00 /* S3Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E97CF58EFC6F3F97C03E18C /* S3Item.swift */; };
+		AA11BB22CC33DD44EE55FF01 /* UploadTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* UploadTask.swift */; };
 		1BC66C350688DEDD05289C8F /* Credentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981FCE7F188ACD8CBAC04F62 /* Credentials.swift */; };
 		1C9A46A36DB14DAEAEFF5F53 /* UploadViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1401FECD7B804EF5A3091A73 /* UploadViewModelTests.swift */; };
 		26D80EBB8AA49E2A06EA5005 /* BrowserListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B05F436D96E5323E80AEE9D /* BrowserListView.swift */; };
@@ -109,6 +110,7 @@
 		94D6AFD0E7D6F10BA29FE7BB /* ViewerContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewerContainer.swift; sourceTree = "<group>"; };
 		981FCE7F188ACD8CBAC04F62 /* Credentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Credentials.swift; sourceTree = "<group>"; };
 		9E97CF58EFC6F3F97C03E18C /* S3Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3Item.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF02 /* UploadTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadTask.swift; sourceTree = "<group>"; };
 		A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadSheet.swift; sourceTree = "<group>"; };
 		A9A3AE9BE5D3CE1CE9A3A835 /* S3ServiceIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3ServiceIntegrationTests.swift; sourceTree = "<group>"; };
 		B0F0CF66C449BD88C3A15F81 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
@@ -318,6 +320,7 @@
 				B68198408E682350F1E44B5C /* BrowseState.swift */,
 				981FCE7F188ACD8CBAC04F62 /* Credentials.swift */,
 				9E97CF58EFC6F3F97C03E18C /* S3Item.swift */,
+				AA11BB22CC33DD44EE55FF02 /* UploadTask.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -447,6 +450,7 @@
 			files = (
 				79EDB94491094A07EC660ED7 /* AudioPlayerView.swift in Sources */,
 				A351E0FB70EB16584AADC30A /* AuthViewModel.swift in Sources */,
+				AA11BB22CC33DD44EE55FF01 /* UploadTask.swift in Sources */,
 				CFA3AF2A444EE505C929EAB3 /* BrowseState.swift in Sources */,
 				7A8691E188E014C5389371D8 /* BrowserGridView.swift in Sources */,
 				26D80EBB8AA49E2A06EA5005 /* BrowserListView.swift in Sources */,

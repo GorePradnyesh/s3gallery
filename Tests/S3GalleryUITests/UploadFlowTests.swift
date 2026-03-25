@@ -54,21 +54,51 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Photo Library"].waitForExistence(timeout: 3))
         app.buttons["Cancel"].tap()
 
-        // Sheet gone — breadcrumb should be visible again
         XCTAssertTrue(app.staticTexts["test-bucket"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["Photo Library"].exists)
     }
 
+    // MARK: - Staging screen
+
+    func testStagingScreenShowsSelectedFiles() {
+        launchWithAutoStage()
+        navigateToTestBucket()
+        openUploadSheet()
+
+        XCTAssertTrue(app.staticTexts["photo1.jpg"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["document.pdf"].exists)
+    }
+
+    func testStagingScreenShowsUploadButton() {
+        launchWithAutoStage()
+        navigateToTestBucket()
+        openUploadSheet()
+
+        // "Upload 2 Files" button should appear
+        let uploadBtn = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Upload'")).element(boundBy: 0)
+        XCTAssertTrue(uploadBtn.waitForExistence(timeout: 3))
+    }
+
+    func testStagingCancelDismissesSheet() {
+        launchWithAutoStage()
+        navigateToTestBucket()
+        openUploadSheet()
+
+        XCTAssertTrue(app.staticTexts["photo1.jpg"].waitForExistence(timeout: 3))
+        app.buttons["Cancel"].tap()
+
+        XCTAssertTrue(app.staticTexts["test-bucket"].waitForExistence(timeout: 3))
+    }
+
     // MARK: - Success flow (auto-upload)
 
-    func testUploadSuccessShowsBanner() {
+    func testUploadSuccessShowsCompletionBanner() {
         launchWithAutoUpload()
         navigateToTestBucket()
         openUploadSheet()
 
-        let checkmark = app.staticTexts["Upload complete"]
-        XCTAssertTrue(checkmark.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["View"].exists)
+        let banner = app.staticTexts["1 file uploaded"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Done"].exists)
     }
 
@@ -84,23 +114,9 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertFalse(app.buttons["Done"].exists)
     }
 
-    func testUploadSuccessViewButtonOpensViewer() {
-        launchWithAutoUpload()
-        navigateToTestBucket()
-        openUploadSheet()
-
-        XCTAssertTrue(app.buttons["View"].waitForExistence(timeout: 5))
-        app.buttons["View"].tap()
-
-        // Viewer dismisses with Done (use navigationBars to avoid ambiguity with UploadSheet's Done)
-        let doneButton = app.navigationBars.buttons["Done"]
-        XCTAssertTrue(doneButton.waitForExistence(timeout: 5))
-        doneButton.tap()
-    }
-
     // MARK: - Failure flow (auto-upload + upload failure)
 
-    func testUploadFailureShowsErrorMessage() {
+    func testUploadFailureShowsFailedSection() {
         app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login",
                                "--auto-upload", "--mock-upload-failure"]
         app.terminate()
@@ -109,12 +125,13 @@ final class UploadFlowTests: XCTestCase {
         navigateToTestBucket()
         openUploadSheet()
 
-        let errorTitle = app.staticTexts["Upload Failed"]
-        XCTAssertTrue(errorTitle.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Dismiss"].exists)
+        // Summary shows "0 of 1 uploaded"
+        let summary = app.staticTexts["0 of 1 uploaded"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Done"].exists)
     }
 
-    func testUploadFailureDismissButtonClosesSheet() {
+    func testUploadFailureDoneButtonDismissesSheet() {
         app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login",
                                "--auto-upload", "--mock-upload-failure"]
         app.terminate()
@@ -123,11 +140,11 @@ final class UploadFlowTests: XCTestCase {
         navigateToTestBucket()
         openUploadSheet()
 
-        XCTAssertTrue(app.buttons["Dismiss"].waitForExistence(timeout: 5))
-        app.buttons["Dismiss"].tap()
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
 
         XCTAssertTrue(app.staticTexts["test-bucket"].waitForExistence(timeout: 3))
-        XCTAssertFalse(app.staticTexts["Upload Failed"].exists)
+        XCTAssertFalse(app.buttons["Done"].exists)
     }
 
     // MARK: - Helpers
@@ -148,6 +165,12 @@ final class UploadFlowTests: XCTestCase {
 
     private func launchWithAutoUpload() {
         app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-upload"]
+        app.terminate()
+        app.launch()
+    }
+
+    private func launchWithAutoStage() {
+        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-stage"]
         app.terminate()
         app.launch()
     }

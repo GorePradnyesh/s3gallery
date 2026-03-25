@@ -388,5 +388,49 @@ Subagent Handoff Notes
 - Product Manager: Requirements are locked. MVP = Phases 0–3 (full browsing + viewing). Phases 4–5 add cache and polish. Phase gate = unit tests green + manual simulator smoke test.   
 - Designer: Use SwiftUI semantic colors (Color.primary, .secondary, .background) for automatic dark/light. All icons from SF Symbols. Toolbar follows NavigationStack conventions. Grid:
  3 columns on iPhone, 4–5 on iPad. Viewers use .fullScreenCover. Minimal chrome — content first.                                                                                        
-- iOS Developer: Add aws-sdk-swift via SPM, import AWSS3. Use S3Client with StaticCredentialsProvider(credentials:). Presigned URLs via S3Presigner. Define S3ServiceProtocol before    
+- iOS Developer: Add aws-sdk-swift via SPM, import AWSS3. Use S3Client with StaticCredentialsProvider(credentials:). Presigned URLs via S3Presigner. Define S3ServiceProtocol before
 implementing S3Service to keep unit tests offline. Minimum deployment target: iOS 17.0, Xcode 15+.
+
+---
+
+Feature Request #3 — Multi-File Upload
+
+Extends the single-file upload flow to allow selecting and uploading multiple files in one operation, with adaptive parallel throttling and a local preview for failed uploads.
+
+UX Flow
+
+  Idle → [Photo Library / Files picker (multi-select)]
+       → Staging screen (file list, remove per-row, "Upload N Files" CTA)
+       → Progress screen (per-file status icons, overall ProgressView)
+       → Completion screen ("X of Y uploaded", failed section with QuickLook preview)
+
+New Types
+
+  UploadTask (S3Gallery/Models/UploadTask.swift)
+    - id: UUID, filename: String, data: Data, contentType: String, state: UploadTaskState
+    - UploadTaskState: .pending / .uploading / .success(S3FileItem) / .failure(Error)
+
+  AdaptiveThrottle actor (inside UploadViewModel.swift)
+    - Continuation-based semaphore, no polling
+    - Starts at concurrency=3, min=1, max=6
+    - Increases capacity after 3 consecutive successes; decreases after 2 consecutive failures
+    - Wakes parked waiters immediately when capacity increases
+
+UploadViewModel.phase (replaces .state)
+  .idle / .staging([UploadTask]) / .uploading([UploadTask]) / .complete([UploadTask])
+
+Files Modified
+
+  S3Gallery/Models/UploadTask.swift               — new
+  S3Gallery/ViewModels/UploadViewModel.swift       — UploadPhase + AdaptiveThrottle + startUpload()
+  S3Gallery/Views/Browser/UploadSheet.swift        — staging/progress/completion sub-views + QuickLook
+  S3Gallery/Testing/UITestSupport.swift            — --auto-stage, --mock-partial-failure flags
+  Tests/S3GalleryTests/Mocks/MockS3Service.swift   — per-call results queue + uploadObjectDelay
+  Tests/S3GalleryTests/UploadViewModelTests.swift  — multi-upload + AdaptiveThrottle unit tests
+  Tests/S3GalleryUITests/UploadFlowTests.swift     — staging + completion UI tests
+
+Test Gate
+
+  Unit: swift test --filter UploadViewModelTests,AdaptiveThrottleTests — all pass
+  UI:   S3GalleryUITests/UploadFlowTests — all pass in simulator
+  Manual: Select 5+ mixed files, verify adaptive throttle logs, verify QuickLook preview on failed file
