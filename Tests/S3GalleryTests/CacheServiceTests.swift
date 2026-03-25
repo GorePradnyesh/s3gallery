@@ -1,5 +1,6 @@
 import Testing
 import UIKit
+import Combine
 @testable import S3Gallery
 
 /// Tests for `CacheService`, which manages the two-layer thumbnail cache
@@ -79,6 +80,38 @@ struct CacheServiceTests {
         #expect(cache.thumbnail(forKey: "key1") == nil)
         #expect(cache.thumbnail(forKey: "key2") == nil)
         #expect(cache.diskUsageBytes == 0)
+    }
+
+    /// Verifies that changing `maxDiskSizeMB` fires `objectWillChange` so SwiftUI re-renders.
+    ///
+    /// `SettingsView` binds both the slider and the "Max Cache Size: X MB" label to
+    /// `cacheService.maxDiskSizeMB`. If this property is not `@Published`, the label will not
+    /// update while the user drags the slider — the value changes internally but SwiftUI never
+    /// invalidates the view. This test confirms that `objectWillChange` fires on every write.
+    @Test("maxDiskSizeMB change publishes objectWillChange for SwiftUI reactivity")
+    func maxDiskSizeMBPublishesChange() async {
+        let cache = makeCache(maxMB: 100)
+        var changeCount = 0
+        let cancellable = cache.objectWillChange.sink { changeCount += 1 }
+
+        cache.maxDiskSizeMB = 200
+        cache.maxDiskSizeMB = 300
+
+        #expect(changeCount == 2)
+        _ = cancellable  // keep alive
+    }
+
+    /// Verifies that changing `maxDiskSizeMB` persists the new value to UserDefaults.
+    ///
+    /// Settings are restored on next launch via UserDefaults. If the `didSet` observer is
+    /// missing or the key is wrong, the user's chosen limit will be silently forgotten.
+    @Test("maxDiskSizeMB change persists to UserDefaults")
+    func maxDiskSizeMBPersistsToUserDefaults() {
+        let cache = makeCache(maxMB: 100)
+        cache.maxDiskSizeMB = 750
+
+        let stored = UserDefaults.standard.integer(forKey: "cacheMaxDiskSizeMB")
+        #expect(stored == 750)
     }
 
     /// Verifies that `diskUsageBytes` is non-decreasing after storing a thumbnail.

@@ -226,6 +226,34 @@ Run against the app in a "test mode" where MockS3Service is injected via a launc
 │ LogoutFlowTests │ Logout → navigates to login; re-launch without credentials shows login           │                                                                                  
 └─────────────────┴──────────────────────────────────────────────────────────────────────────────────┘                                                                                  
                                                                                                                                                                                         
+iOS-Specific Implementation Rules (must be applied to every new screen)
+
+The following rules are derived from bugs found during development. Treat them as mandatory
+checklist items when implementing or reviewing any SwiftUI screen.
+
+┌────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                     Rule                       │                                            Rationale                                          │
+├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Every mutable property shown in the UI on an   │ Plain `var` on an ObservableObject does not trigger SwiftUI re-render. Bug: cache size slider  │
+│ ObservableObject must be @Published.           │ updated the value silently but the label never refreshed until the view was dismissed/reopened. │
+├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ObservableObject references held by a view     │ @State is for value types only. Using @State with a reference type stores the pointer but does │
+│ must use @ObservedObject (or @StateObject),    │ NOT subscribe to objectWillChange. Bug: @Published on CacheService fired correctly, but the    │
+│ never @State.                                  │ view using @State never re-rendered because it never observed the publisher.                    │
+├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ For every @Published property that drives a    │ Unit-test the publisher: subscribe to objectWillChange, mutate the property, assert the sink   │
+│ slider or live-updating label, write a unit    │ fired once per write. This catches missing @Published annotations before they reach the device. │
+│ test asserting objectWillChange fires.         │                                                                                                │
+├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Image display in grids/lists must use          │ .scaledToFill() crops to fill the frame and distorts non-square images. Use .scaledToFit()     │
+│ .scaledToFit(), not .scaledToFill().           │ with a semantic background color to letterbox/pillarbox and preserve the original aspect ratio. │
+├────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Thumbnail rendering must preserve aspect ratio │ UIGraphicsImageRenderer.draw(in: fixedSquareRect) stretches the image. Compute the aspect-fit  │
+│ — compute aspect-fit size before rendering.   │ CGSize first (min scale in each dimension) and render into that, not the target square.         │
+└────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+---
+
 Maestro (Future Extensibility)                                                                                                                                                          
                                                                                                                                                                                         
 Maestro YAML flows can be added at Tests/MaestroFlows/. The folder will be created in Phase 0 as a placeholder. Maestro runs against a real simulator build and can be integrated with  
@@ -255,7 +283,8 @@ Each phase is gated by:
 ├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
 │ 3 — Viewers │ ViewerViewModelTests, FileTypeDetectorTests pass │ Open a real photo, video, PDF, audio file, and an unknown file type in correct viewers                    │          
 ├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
-│ 4 — Cache   │ CacheServiceTests pass                           │ Grid thumbnails load from cache on second visit; logout clears cache (verify size drops to 0 in Settings) │          
+│ 4 — Cache   │ CacheServiceTests pass (incl. @Published         │ Grid thumbnails load from cache on second visit; logout clears cache (verify size drops to 0 in Settings); │
+│             │ reactivity + UserDefaults persistence tests)     │ dragging the cache size slider live-updates the "Max Cache Size: X MB" label while dragging              │          
 ├─────────────┼──────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤          
 │ 5 — Polish  │ All test suites green                            │ iPad layout uses split view; dark mode correct; error states display properly                             │          
 └─────────────┴──────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────┘          

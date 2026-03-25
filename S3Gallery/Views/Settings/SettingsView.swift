@@ -4,7 +4,7 @@ struct SettingsView: View {
     let credentials: Credentials
     let onLogout: () -> Void
 
-    @State private var cacheService = CacheService.shared
+    @ObservedObject private var cacheService = CacheService.shared
     @State private var showLogoutConfirmation = false
     @State private var showClearCacheConfirmation = false
     @Environment(\.dismiss) private var dismiss

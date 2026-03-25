@@ -17,7 +17,7 @@ final class CacheService: ObservableObject {
     private let fileManager = FileManager.default
     private let maxMemoryCostMB = 50
 
-    var maxDiskSizeMB: Int {
+    @Published var maxDiskSizeMB: Int {
         didSet {
             UserDefaults.standard.set(maxDiskSizeMB, forKey: "cacheMaxDiskSizeMB")
         }
