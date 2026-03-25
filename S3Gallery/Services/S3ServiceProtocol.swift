@@ -4,6 +4,8 @@ protocol S3ServiceProtocol: AnyObject {
     func listBuckets() async throws -> [String]
     func listObjects(bucket: String, prefix: String) async throws -> [S3Item]
     func presignedURL(for item: S3FileItem, ttl: TimeInterval) async throws -> URL
+    func checkWriteAccess(bucket: String) async throws -> Bool
+    func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws
 }
 
 enum S3ServiceError: Error, LocalizedError {
@@ -11,6 +13,7 @@ enum S3ServiceError: Error, LocalizedError {
     case invalidResponse
     case unauthorized
     case notFound(String)
+    case uploadFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -22,6 +25,8 @@ enum S3ServiceError: Error, LocalizedError {
             return "Invalid credentials or insufficient permissions."
         case .notFound(let key):
             return "Object not found: \(key)"
+        case .uploadFailed(let detail):
+            return "Upload failed: \(detail)"
         }
     }
 }

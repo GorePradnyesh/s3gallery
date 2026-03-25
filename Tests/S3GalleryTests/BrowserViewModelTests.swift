@@ -3,6 +3,7 @@ import Foundation
 @testable import S3Gallery
 
 @Suite("BrowserViewModel")
+@MainActor
 struct BrowserViewModelTests {
 
     /// Builds a BrowserViewModel backed by a MockS3Service pre-loaded with the given items.
@@ -167,5 +168,51 @@ struct BrowserViewModelTests {
 
         let names = vm.sortedItems.map { $0.name }
         #expect(names == ["c.jpg", "b.jpg", "a.jpg"])
+    }
+
+    // MARK: - Write access
+
+    @Test("checkWriteAccess is called once on enterBucket")
+    func checkWriteAccessCalledOnEnterBucket() async {
+        let (vm, mock) = makeVM()
+        await vm.enterBucket("my-bucket")
+        #expect(mock.checkWriteAccessCalls == ["my-bucket"])
+    }
+
+    @Test("checkWriteAccess result is cached; second enterBucket on same bucket does not re-check")
+    func checkWriteAccessCached() async {
+        let (vm, mock) = makeVM()
+        await vm.enterBucket("my-bucket")
+        await vm.popToRoot()
+        await vm.enterBucket("my-bucket")
+        #expect(mock.checkWriteAccessCalls.count == 1)
+    }
+
+    @Test("currentBucketHasWriteAccess is nil before entering a bucket")
+    func currentBucketHasWriteAccessInitiallyNil() async {
+        let (vm, _) = makeVM()
+        #expect(vm.currentBucketHasWriteAccess == nil)
+    }
+
+    @Test("currentBucketHasWriteAccess returns cached value after entering bucket")
+    func currentBucketHasWriteAccessAfterEnter() async {
+        let (vm, mock) = makeVM()
+        mock.checkWriteAccessResult = .success(true)
+        await vm.enterBucket("my-bucket")
+        #expect(vm.currentBucketHasWriteAccess == true)
+    }
+
+    @Test("resetSession clears write access cache and pops to root")
+    func resetSessionClearsCache() async {
+        let (vm, mock) = makeVM()
+        await vm.enterBucket("my-bucket")
+        #expect(mock.checkWriteAccessCalls.count == 1)
+
+        await vm.resetSession()
+        #expect(vm.isAtRoot)
+
+        // Enter the same bucket again — cache should be gone, so a new check is made
+        await vm.enterBucket("my-bucket")
+        #expect(mock.checkWriteAccessCalls.count == 2)
     }
 }

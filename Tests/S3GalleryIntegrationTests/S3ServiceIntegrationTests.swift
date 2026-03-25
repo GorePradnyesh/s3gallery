@@ -51,6 +51,29 @@ struct S3ServiceIntegrationTests {
         #expect(url.host?.contains("amazonaws.com") == true)
     }
 
+    @Test("checkWriteAccess returns true on a writable bucket")
+    func checkWriteAccess() async throws {
+        let bucket = try requiredEnv("S3_TEST_BUCKET_WRITABLE")
+        let service = try await makeService()
+        let hasWrite = try await service.checkWriteAccess(bucket: bucket)
+        #expect(hasWrite == true)
+    }
+
+    @Test("uploadObject uploads a small file that appears in listObjects")
+    func uploadObject() async throws {
+        let bucket = try requiredEnv("S3_TEST_BUCKET_WRITABLE")
+        let service = try await makeService()
+
+        let testKey = "s3gallery-integration-test-\(Int(Date().timeIntervalSince1970)).txt"
+        let data = Data("integration test upload".utf8)
+
+        try await service.uploadObject(bucket: bucket, key: testKey, data: data, contentType: "text/plain")
+
+        let items = try await service.listObjects(bucket: bucket, prefix: "")
+        let keys = items.compactMap { $0.fileItem?.key }
+        #expect(keys.contains(testKey))
+    }
+
     private func requiredEnv(_ key: String) throws -> String {
         guard let value = ProcessInfo.processInfo.environment[key], !value.isEmpty else {
             throw IntegrationTestError.missingEnvVar(key)

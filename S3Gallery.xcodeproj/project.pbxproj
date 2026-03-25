@@ -46,6 +46,10 @@
 		D65094F1C033D3862F179ADC /* GenericFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D053ACBF6B15042D98CFD47 /* GenericFileView.swift */; };
 		D7D7FA2EA4F8BF17355EE554 /* PDFViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4784627EB044F78D8A6D4542 /* PDFViewerView.swift */; };
 		E43E04920DDED0380A6CBF62 /* S3ServiceIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A3AE9BE5D3CE1CE9A3A835 /* S3ServiceIntegrationTests.swift */; };
+		B01551CD5CB245F193F845E5 /* UploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EA26FAAC84244518170ED78 /* UploadViewModel.swift */; };
+		3A1A14B79A5144C1ABEC9B37 /* UploadSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */; };
+		1C9A46A36DB14DAEAEFF5F53 /* UploadViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1401FECD7B804EF5A3091A73 /* UploadViewModelTests.swift */; };
+		5600F94502DE4A189C6F667B /* UploadFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AB200259B684872A17501F4 /* UploadFlowTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -109,13 +113,17 @@
 		BF8F8590CBA98CFBD160E1EC /* MockS3Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockS3Service.swift; sourceTree = "<group>"; };
 		C15912A41DEE2D46BD0E1107 /* S3Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3Service.swift; sourceTree = "<group>"; };
 		C3301245FAF2C2927D78836D /* S3ServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3ServiceProtocol.swift; sourceTree = "<group>"; };
-		C7B5D8B9EF6097D8834E8888 /* S3Gallery.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = S3Gallery.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C7B5D8B9EF6097D8834E8888 /* S3Gallery.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = S3Gallery.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CA4ECCE31F81E530CE56DFC9 /* BrowseFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseFlowTests.swift; sourceTree = "<group>"; };
 		D3783AA89C98AF6DC8296547 /* BrowserToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserToolbar.swift; sourceTree = "<group>"; };
 		DADC3F0A5C70B22DCE433BB3 /* S3GalleryUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = S3GalleryUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E21F01008AF3E3AA9EBBA735 /* CacheServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheServiceTests.swift; sourceTree = "<group>"; };
 		EA41CDD6218A7BECF74E735C /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		EB17F9414B15CEB68B0151A3 /* LoginFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginFlowTests.swift; sourceTree = "<group>"; };
+		6EA26FAAC84244518170ED78 /* UploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadViewModel.swift; sourceTree = "<group>"; };
+		A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadSheet.swift; sourceTree = "<group>"; };
+		1401FECD7B804EF5A3091A73 /* UploadViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadViewModelTests.swift; sourceTree = "<group>"; };
+		7AB200259B684872A17501F4 /* UploadFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadFlowTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -191,6 +199,7 @@
 				D3783AA89C98AF6DC8296547 /* BrowserToolbar.swift */,
 				B0F0CF66C449BD88C3A15F81 /* BrowserView.swift */,
 				637463A6C3E609560B71729B /* S3ItemRow.swift */,
+				A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */,
 			);
 			path = Browser;
 			sourceTree = "<group>";
@@ -221,6 +230,7 @@
 				E21F01008AF3E3AA9EBBA735 /* CacheServiceTests.swift */,
 				0FF04F110CA4A7D0E23C5AD9 /* CredentialsServiceTests.swift */,
 				2881FEF5D4C73087C19874B8 /* FileTypeDetectorTests.swift */,
+				1401FECD7B804EF5A3091A73 /* UploadViewModelTests.swift */,
 				6F1B3F8EBBAC55DF508259FA /* ViewerViewModelTests.swift */,
 			);
 			name = S3GalleryTests;
@@ -256,6 +266,7 @@
 			children = (
 				080CE2D76A481F113E419492 /* AuthViewModel.swift */,
 				160CE9D4805A733735EFDBE5 /* BrowserViewModel.swift */,
+				6EA26FAAC84244518170ED78 /* UploadViewModel.swift */,
 				157673D547C21A0234C6E9D7 /* ViewerViewModel.swift */,
 			);
 			path = ViewModels;
@@ -267,6 +278,7 @@
 				CA4ECCE31F81E530CE56DFC9 /* BrowseFlowTests.swift */,
 				EB17F9414B15CEB68B0151A3 /* LoginFlowTests.swift */,
 				1CB3D4E864411769634427E4 /* LogoutFlowTests.swift */,
+				7AB200259B684872A17501F4 /* UploadFlowTests.swift */,
 				5EBF1BA58F0AF27400364DF7 /* ViewerFlowTests.swift */,
 			);
 			name = S3GalleryUITests;
@@ -399,7 +411,6 @@
 						TestTargetID = 9855830874CC7A364160DB2C;
 					};
 					9855830874CC7A364160DB2C = {
-						DevelopmentTeam = QMB2PQ2M6U;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -457,6 +468,8 @@
 				08502750B642F7E41E3E403D /* S3ServiceProtocol.swift in Sources */,
 				9E31D9250AF1087328EC1C6E /* SettingsView.swift in Sources */,
 				1895D3A17E4E74777F59F95F /* UITestSupport.swift in Sources */,
+				3A1A14B79A5144C1ABEC9B37 /* UploadSheet.swift in Sources */,
+				B01551CD5CB245F193F845E5 /* UploadViewModel.swift in Sources */,
 				4A445D4F3281BD9EAC1E4162 /* VideoPlayerView.swift in Sources */,
 				C64C588E8DAEE91663C9EE6B /* ViewerContainer.swift in Sources */,
 				151FD9CA6B20BD789F59C78F /* ViewerViewModel.swift in Sources */,
@@ -479,6 +492,7 @@
 				04688DC0BC46C8427AA1C6EB /* LoginFlowTests.swift in Sources */,
 				9BFF76094A88CFA63BA1490B /* LogoutFlowTests.swift in Sources */,
 				527223B5B0C8E662506A25C1 /* ViewerFlowTests.swift in Sources */,
+				5600F94502DE4A189C6F667B /* UploadFlowTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -492,6 +506,7 @@
 				4591B4882A55F3B113960969 /* CredentialsServiceTests.swift in Sources */,
 				2E8499B4767FBF5B9890722C /* FileTypeDetectorTests.swift in Sources */,
 				ADA1629607AAC548E43E58D5 /* MockS3Service.swift in Sources */,
+				1C9A46A36DB14DAEAEFF5F53 /* UploadViewModelTests.swift in Sources */,
 				BFF7AE25E7AB4176CD940B1E /* ViewerViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -577,7 +592,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = QMB2PQ2M6U;
+				DEVELOPMENT_TEAM = NAB7797K3F;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = S3Gallery/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -653,7 +668,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = QMB2PQ2M6U;
+				DEVELOPMENT_TEAM = NAB7797K3F;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = S3Gallery/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

@@ -9,6 +9,9 @@ enum UITestArgs {
     static var noKeychain:   Bool { CommandLine.arguments.contains("--no-keychain") }
     static var mockSuccess:  Bool { CommandLine.arguments.contains("--mock-s3-success") }
     static var mockFailure:  Bool { CommandLine.arguments.contains("--mock-s3-failure") }
+    static var mockReadOnly:      Bool { CommandLine.arguments.contains("--mock-read-only") }
+    static var autoUpload:        Bool { CommandLine.arguments.contains("--auto-upload") }
+    static var mockUploadFailure: Bool { CommandLine.arguments.contains("--mock-upload-failure") }
 }
 
 // MARK: - In-process mock S3 service for UI tests
@@ -49,10 +52,26 @@ final class UITestMockS3Service: S3ServiceProtocol {
     func presignedURL(for item: S3FileItem, ttl: TimeInterval) async throws -> URL {
         URL(string: "https://test.s3.example.com/\(item.key)?mock=1")!
     }
+
+    func checkWriteAccess(bucket: String) async throws -> Bool {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+        return !UITestArgs.mockReadOnly
+    }
+
+    func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+        if UITestArgs.mockUploadFailure { throw UITestError.uploadFailed }
+    }
 }
 
 enum UITestError: Error, LocalizedError {
     case invalidCredentials
-    var errorDescription: String? { "Invalid credentials (UI test mock failure)" }
+    case uploadFailed
+    var errorDescription: String? {
+        switch self {
+        case .invalidCredentials: return "Invalid credentials (UI test mock failure)"
+        case .uploadFailed: return "Upload failed (UI test mock failure)"
+        }
+    }
 }
 #endif

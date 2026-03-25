@@ -73,4 +73,36 @@ final class S3Service: S3ServiceProtocol {
         let input = GetObjectInput(bucket: item.bucket, key: item.key)
         return try await client.presignedURLForGetObject(input: input, expiration: ttl)
     }
+
+    func checkWriteAccess(bucket: String) async throws -> Bool {
+        do {
+            _ = try await client.putObject(input: PutObjectInput(
+                body: .data(Data()),
+                bucket: bucket,
+                contentLength: 0,
+                key: ".s3gallery-probe"
+            ))
+            return true
+        } catch {
+            let msg = error.localizedDescription.lowercased()
+            if msg.contains("network") || msg.contains("offline") || msg.contains("connection") {
+                throw error
+            }
+            return false
+        }
+    }
+
+    func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws {
+        do {
+            _ = try await client.putObject(input: PutObjectInput(
+                body: .data(data),
+                bucket: bucket,
+                contentLength: data.count,
+                contentType: contentType,
+                key: key
+            ))
+        } catch {
+            throw S3ServiceError.uploadFailed(error.localizedDescription)
+        }
+    }
 }

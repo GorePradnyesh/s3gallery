@@ -18,12 +18,17 @@ enum BrowserLoadState: Equatable {
 }
 
 @Observable
+@MainActor
 final class BrowserViewModel {
     var navigationStack: [BrowseState] = []
     var items: [S3Item] = []
     var loadState: BrowserLoadState = .idle
     var sortOption: SortOption = .nameAscending
     var buckets: [String] = []
+    var isCheckingWriteAccess = false
+    private(set) var currentBucketHasWriteAccess: Bool? = nil
+
+    private var writeAccessCache: [String: Bool] = [:]
 
     let s3Service: any S3ServiceProtocol
 
@@ -48,9 +53,11 @@ final class BrowserViewModel {
     }
 
     func enterBucket(_ bucket: String) async {
+        currentBucketHasWriteAccess = nil
         let state = BrowseState(bucket: bucket, prefix: "")
         navigationStack = [state]
         await loadCurrentFolder()
+        await checkWriteAccess(for: bucket)
     }
 
     func enterFolder(name: String, prefix: String) async {
@@ -70,6 +77,26 @@ final class BrowserViewModel {
         navigationStack = []
         items = []
         loadState = .idle
+    }
+
+    func resetSession() async {
+        writeAccessCache = [:]
+        currentBucketHasWriteAccess = nil
+        await popToRoot()
+    }
+
+    func checkWriteAccess(for bucket: String) async {
+        if let cached = writeAccessCache[bucket] {
+            currentBucketHasWriteAccess = cached
+            return
+        }
+        isCheckingWriteAccess = true
+        defer { isCheckingWriteAccess = false }
+        let result = (try? await s3Service.checkWriteAccess(bucket: bucket)) ?? false
+        var updatedCache = writeAccessCache
+        updatedCache[bucket] = result
+        writeAccessCache = updatedCache
+        currentBucketHasWriteAccess = result
     }
 
     func refresh() async {

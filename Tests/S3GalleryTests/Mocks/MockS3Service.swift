@@ -7,12 +7,16 @@ final class MockS3Service: S3ServiceProtocol {
     var bucketsResult: Result<[String], Error> = .success(["test-bucket"])
     var objectsResult: Result<[S3Item], Error> = .success([])
     var presignedURLResult: Result<URL, Error> = .success(URL(string: "https://example.com/presigned")!)
+    var checkWriteAccessResult: Result<Bool, Error> = .success(true)
+    var uploadObjectResult: Result<Void, Error> = .success(())
 
     // MARK: - Call tracking
 
     private(set) var listBucketsCallCount = 0
     private(set) var listObjectsCalls: [(bucket: String, prefix: String)] = []
     private(set) var presignedURLCalls: [(item: S3FileItem, ttl: TimeInterval)] = []
+    private(set) var checkWriteAccessCalls: [String] = []
+    private(set) var uploadObjectCalls: [(bucket: String, key: String, contentType: String)] = []
 
     // MARK: - S3ServiceProtocol
 
@@ -29,6 +33,16 @@ final class MockS3Service: S3ServiceProtocol {
     func presignedURL(for item: S3FileItem, ttl: TimeInterval) async throws -> URL {
         presignedURLCalls.append((item, ttl))
         return try presignedURLResult.get()
+    }
+
+    func checkWriteAccess(bucket: String) async throws -> Bool {
+        checkWriteAccessCalls.append(bucket)
+        return try checkWriteAccessResult.get()
+    }
+
+    func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws {
+        uploadObjectCalls.append((bucket, key, contentType))
+        return try uploadObjectResult.get()
     }
 
     // MARK: - Helpers for test setup
