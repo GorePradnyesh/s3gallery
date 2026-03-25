@@ -6,7 +6,7 @@ final class LoginFlowTests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--mock-s3-success"]
+        app.launchArguments = ["--uitesting", "--mock-s3-success", "--no-keychain"]
         app.launch()
     }
 

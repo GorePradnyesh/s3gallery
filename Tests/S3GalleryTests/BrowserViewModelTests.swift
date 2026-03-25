@@ -5,6 +5,10 @@ import Foundation
 @Suite("BrowserViewModel")
 struct BrowserViewModelTests {
 
+    /// Builds a BrowserViewModel backed by a MockS3Service pre-loaded with the given items.
+    ///
+    /// The mock always reports three buckets ("alpha", "beta", "gamma") so bucket-list tests
+    /// have a predictable, sorted baseline without needing real AWS access.
     private func makeVM(items: [S3Item] = []) -> (BrowserViewModel, MockS3Service) {
         let mock = MockS3Service()
         mock.objectsResult = .success(items)
@@ -14,6 +18,11 @@ struct BrowserViewModelTests {
 
     // MARK: - Bucket loading
 
+    /// Verifies that `loadBuckets` populates the `buckets` array in alphabetical order.
+    ///
+    /// The bucket list is the top-level screen the user sees after login. It must reflect what
+    /// `listBuckets` returns (sorted for consistent display) and transition `loadState` to
+    /// `.loaded` so the UI stops showing a spinner.
     @Test("loadBuckets populates buckets sorted")
     func loadBuckets() async {
         let (vm, _) = makeVM()
@@ -23,6 +32,11 @@ struct BrowserViewModelTests {
         #expect(vm.loadState == .loaded)
     }
 
+    /// Verifies that a network or AWS error during bucket listing is surfaced in `loadState`.
+    ///
+    /// If `listBuckets` throws (e.g. no network, expired credentials), the view model must
+    /// transition to `.error` and include a human-readable message. The UI uses this to render
+    /// an error banner with a Retry button instead of an empty list, which would be confusing.
     @Test("loadBuckets sets error state on failure")
     func loadBucketsError() async {
         let mock = MockS3Service()
@@ -43,6 +57,12 @@ struct BrowserViewModelTests {
 
     // MARK: - Navigation
 
+    /// Verifies that tapping a bucket initialises the navigation stack and triggers an object listing.
+    ///
+    /// `enterBucket` is called when the user taps a bucket name on the root screen. It must:
+    /// - Push exactly one `BrowseState` onto the stack (the bucket root, prefix = "")
+    /// - Trigger `listObjectsV2` so folder contents appear immediately
+    /// - Surface those items through `sortedItems` so the grid/list view can render them
     @Test("enterBucket sets navigation stack and loads items")
     func enterBucket() async {
         let folder = S3Item.folder(name: "photos", prefix: "photos/")
@@ -56,6 +76,12 @@ struct BrowserViewModelTests {
         #expect(vm.sortedItems.count == 1)
     }
 
+    /// Verifies that navigating into a subfolder appends a new state to the stack.
+    ///
+    /// Each folder tap must push a new `BrowseState` with the correct prefix so the breadcrumb
+    /// bar can reconstruct the full path and the back-navigation can unwind one level at a time.
+    /// After entering "my-bucket" then "photos/", the stack depth must be 2 and the top state
+    /// must carry the "photos/" prefix.
     @Test("enterFolder appends to navigation stack")
     func enterFolder() async {
         let (vm, _) = makeVM()
@@ -66,6 +92,12 @@ struct BrowserViewModelTests {
         #expect(vm.navigationStack[1].prefix == "photos/")
     }
 
+    /// Verifies that tapping a breadcrumb segment pops the stack back to that level.
+    ///
+    /// The breadcrumb bar allows non-linear navigation — the user can jump two or more levels
+    /// up in one tap. `navigate(to:)` must truncate the stack so only states up to and
+    /// including the tapped breadcrumb remain. Navigating to the root (index 0) from depth 3
+    /// must leave exactly one state on the stack with an empty prefix.
     @Test("navigate pops stack to target state")
     func navigateToBreadcrumb() async {
         let (vm, _) = makeVM()
@@ -82,6 +114,11 @@ struct BrowserViewModelTests {
         #expect(vm.currentState?.prefix == "")
     }
 
+    /// Verifies that `popToRoot` returns the user to the bucket list screen.
+    ///
+    /// The back-to-buckets button in the toolbar calls `popToRoot`. After it resolves,
+    /// `isAtRoot` must be true (so the UI shows the bucket list, not folder contents)
+    /// and `items` must be empty (no stale folder contents visible during transition).
     @Test("popToRoot clears navigation stack and items")
     func popToRoot() async {
         let (vm, _) = makeVM()
@@ -95,6 +132,11 @@ struct BrowserViewModelTests {
 
     // MARK: - Sorting
 
+    /// Verifies that folders always appear before files regardless of their names or order returned by S3.
+    ///
+    /// S3 `ListObjectsV2` returns objects in UTF-8 byte order, which can interleave folders and files
+    /// (e.g. "aaa/" folder after "z.jpg" file). The browser must always group folders at the top so
+    /// the user can navigate the hierarchy without hunting for directories buried in a file list.
     @Test("sortedItems puts folders before files")
     func sortFoldersFirst() async {
         let items: [S3Item] = [
@@ -110,6 +152,12 @@ struct BrowserViewModelTests {
         #expect(sorted[0].isFolder)
     }
 
+    /// Verifies that the `nameDescending` sort option reverses the alphabetical order of files.
+    ///
+    /// The sort picker in the toolbar lets users flip between A→Z and Z→A. With `.nameDescending`
+    /// selected, `sortedItems` must return files in reverse lexicographic order so "c" comes before
+    /// "b" which comes before "a". Folders are not checked here as they follow the same logic and
+    /// are already covered by `sortFoldersFirst`.
     @Test("sortOption nameDescending reverses file order")
     func sortNameDescending() async {
         let items = MockS3Service.makeFiles(["a.jpg", "c.jpg", "b.jpg"])

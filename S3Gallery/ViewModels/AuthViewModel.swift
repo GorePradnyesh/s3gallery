@@ -20,7 +20,7 @@ final class AuthViewModel {
     private(set) var credentials: Credentials?
 
     private let credentialsService: any CredentialsServiceProtocol
-    private let serviceFactory: (Credentials) async throws -> any S3ServiceProtocol
+    private var serviceFactory: (Credentials) async throws -> any S3ServiceProtocol
 
     init(
         credentialsService: any CredentialsServiceProtocol = CredentialsService(),
@@ -79,6 +79,27 @@ final class AuthViewModel {
             authState = .failure(error.localizedDescription)
         }
     }
+
+    // MARK: - UI test injection
+
+#if DEBUG
+    /// Replaces the service factory so subsequent login attempts use the provided mock.
+    /// Called by `S3GalleryApp` when launched with `--mock-s3-success` or `--mock-s3-failure`.
+    func overrideServiceFactory(_ factory: @escaping (Credentials) async throws -> any S3ServiceProtocol) {
+        serviceFactory = factory
+    }
+
+    /// Bypasses the normal login flow for UI tests launched with `--skip-login`.
+    /// Sets the view model into an authenticated state with mock credentials and service
+    /// without touching the Keychain or making any network calls.
+    func injectMockAuthentication(service: any S3ServiceProtocol) {
+        activeService = service
+        credentials = Credentials(accessKeyId: "AKIA-UITEST",
+                                  secretAccessKey: "uitest-secret",
+                                  region: "us-east-1")
+        isAuthenticated = true
+    }
+#endif
 
     // MARK: - Logout
 

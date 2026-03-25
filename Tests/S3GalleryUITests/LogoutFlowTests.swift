@@ -25,10 +25,15 @@ final class LogoutFlowTests: XCTestCase {
         XCTAssertTrue(logoutButton.waitForExistence(timeout: 3))
         logoutButton.tap()
 
-        // Confirm in the dialog
-        let confirmButton = app.buttons.matching(NSPredicate(format: "label == 'Logout'")).element(boundBy: 1)
-        if confirmButton.waitForExistence(timeout: 2) {
-            confirmButton.tap()
+        // Confirm in the action sheet — wait for it to appear, then tap the destructive action
+        let sheet = app.sheets.firstMatch
+        let sheetLogout = sheet.buttons["Logout"]
+        if sheetLogout.waitForExistence(timeout: 3) {
+            sheetLogout.tap()
+        } else {
+            // Fallback: on some iOS versions confirmationDialog renders as an alert
+            let alertLogout = app.alerts.firstMatch.buttons["Logout"]
+            if alertLogout.waitForExistence(timeout: 2) { alertLogout.tap() }
         }
 
         // Should show login screen

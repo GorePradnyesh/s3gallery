@@ -131,6 +131,7 @@ struct BrowserView: View {
             } label: {
                 Image(systemName: "gearshape")
                     .accessibilityLabel("Settings")
+                    .accessibilityIdentifier("Settings")
             }
         }
     }

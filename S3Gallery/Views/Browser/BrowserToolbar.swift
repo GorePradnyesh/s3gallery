@@ -58,11 +58,13 @@ struct ViewModeToggle: View {
     @Binding var mode: ViewMode
 
     var body: some View {
+        let label = mode == .list ? "Switch to grid view" : "Switch to list view"
         Button {
             mode = mode == .list ? .grid : .list
         } label: {
             Image(systemName: mode == .list ? "square.grid.2x2" : "list.bullet")
-                .accessibilityLabel(mode == .list ? "Switch to grid view" : "Switch to list view")
+                .accessibilityLabel(label)
+                .accessibilityIdentifier(label)
         }
     }
 }

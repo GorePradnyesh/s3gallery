@@ -96,6 +96,7 @@ struct LoginView: View {
         .buttonStyle(.borderedProminent)
         .disabled(viewModel.authState == .loading)
         .accessibilityLabel("Connect to S3")
+        .accessibilityIdentifier("Connect")
     }
 
     private func errorBanner(message: String) -> some View {
@@ -120,6 +121,9 @@ private struct LabeledTextField: View {
     @Binding var text: String
     var isSecure: Bool = false
     var autocapitalization: TextInputAutocapitalization = .never
+    /// Accessibility identifier used by XCUITest to locate this field.
+    /// Defaults to the placeholder text so tests can reference fields by their hint.
+    var identifier: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -136,6 +140,7 @@ private struct LabeledTextField: View {
             }
             .textInputAutocapitalization(autocapitalization)
             .autocorrectionDisabled()
+            .accessibilityIdentifier(identifier ?? placeholder)
             .padding(12)
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
         }

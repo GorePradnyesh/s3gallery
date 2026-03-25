@@ -13,6 +13,7 @@
 		08502750B642F7E41E3E403D /* S3ServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3301245FAF2C2927D78836D /* S3ServiceProtocol.swift */; };
 		0F145AC2EF378EAF42E066B1 /* BrowserToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3783AA89C98AF6DC8296547 /* BrowserToolbar.swift */; };
 		151FD9CA6B20BD789F59C78F /* ViewerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 157673D547C21A0234C6E9D7 /* ViewerViewModel.swift */; };
+		1895D3A17E4E74777F59F95F /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 151BDBF6130FF71FAC09E0CA /* UITestSupport.swift */; };
 		19867C2FD6DE067FA0836D00 /* S3Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E97CF58EFC6F3F97C03E18C /* S3Item.swift */; };
 		1BC66C350688DEDD05289C8F /* Credentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 981FCE7F188ACD8CBAC04F62 /* Credentials.swift */; };
 		26D80EBB8AA49E2A06EA5005 /* BrowserListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B05F436D96E5323E80AEE9D /* BrowserListView.swift */; };
@@ -77,6 +78,7 @@
 		080CE2D76A481F113E419492 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		0EAB74734188FC18370EDEC7 /* FileTypeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTypeDetector.swift; sourceTree = "<group>"; };
 		0FF04F110CA4A7D0E23C5AD9 /* CredentialsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialsServiceTests.swift; sourceTree = "<group>"; };
+		151BDBF6130FF71FAC09E0CA /* UITestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
 		157673D547C21A0234C6E9D7 /* ViewerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewerViewModel.swift; sourceTree = "<group>"; };
 		160CE9D4805A733735EFDBE5 /* BrowserViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModel.swift; sourceTree = "<group>"; };
 		1CB3D4E864411769634427E4 /* LogoutFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogoutFlowTests.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 			children = (
 				F9199EAEEAE57785FE226D7C /* Models */,
 				0A98369113A67D77946A7BEC /* Services */,
+				DA801FE21F1B8AFA39334459 /* Testing */,
 				4482E9C8DF693CEFA52D67C4 /* Utilities */,
 				6A5112112F13974B18234D10 /* ViewModels */,
 				54A20CE6889E61B70FDB2520 /* Views */,
@@ -281,6 +284,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		DA801FE21F1B8AFA39334459 /* Testing */ = {
+			isa = PBXGroup;
+			children = (
+				151BDBF6130FF71FAC09E0CA /* UITestSupport.swift */,
+			);
+			path = Testing;
+			sourceTree = "<group>";
+		};
 		E54AA60197EB4F98BF16BA92 /* Mocks */ = {
 			isa = PBXGroup;
 			children = (
@@ -387,6 +398,10 @@
 					492249FB3A88AC430875729C = {
 						TestTargetID = 9855830874CC7A364160DB2C;
 					};
+					9855830874CC7A364160DB2C = {
+						DevelopmentTeam = QMB2PQ2M6U;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 7FA0B06E86F97C279537C940 /* Build configuration list for PBXProject "S3Gallery" */;
@@ -441,6 +456,7 @@
 				474107FE33288AADC03D7847 /* S3Service.swift in Sources */,
 				08502750B642F7E41E3E403D /* S3ServiceProtocol.swift in Sources */,
 				9E31D9250AF1087328EC1C6E /* SettingsView.swift in Sources */,
+				1895D3A17E4E74777F59F95F /* UITestSupport.swift in Sources */,
 				4A445D4F3281BD9EAC1E4162 /* VideoPlayerView.swift in Sources */,
 				C64C588E8DAEE91663C9EE6B /* ViewerContainer.swift in Sources */,
 				151FD9CA6B20BD789F59C78F /* ViewerViewModel.swift in Sources */,
@@ -559,7 +575,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = QMB2PQ2M6U;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = S3Gallery/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -633,7 +651,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = QMB2PQ2M6U;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = S3Gallery/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

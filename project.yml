@@ -61,6 +61,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_STRICT_CONCURRENCY: complete
         ENABLE_PREVIEWS: YES
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: QMB2PQ2M6U
     info:
       path: S3Gallery/Info.plist
       properties:
