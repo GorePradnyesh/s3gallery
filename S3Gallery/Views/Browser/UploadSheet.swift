@@ -12,19 +12,25 @@ struct UploadSheet: View {
     @State private var showFilePicker = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var previewURL: URL?
+    @State private var loadingProgress: (current: Int, total: Int)? = nil
+    @State private var loadingTask: Task<Void, Never>? = nil
 
     var body: some View {
         NavigationStack {
             Group {
-                switch viewModel.phase {
-                case .idle:
-                    idleView
-                case .staging(let tasks):
-                    stagingView(tasks: tasks)
-                case .uploading(let tasks):
-                    progressView(tasks: tasks)
-                case .complete(let tasks):
-                    completionView(tasks: tasks)
+                if let progress = loadingProgress {
+                    fileLoadingView(current: progress.current, total: progress.total)
+                } else {
+                    switch viewModel.phase {
+                    case .idle:
+                        idleView
+                    case .staging(let tasks):
+                        stagingView(tasks: tasks)
+                    case .uploading(let tasks):
+                        progressView(tasks: tasks)
+                    case .complete(let tasks):
+                        completionView(tasks: tasks)
+                    }
                 }
             }
             .navigationTitle("Upload")
@@ -43,14 +49,14 @@ struct UploadSheet: View {
         ) { result in
             switch result {
             case .success(let urls):
-                Task { await stageFileURLs(urls) }
+                loadingTask = Task { await stageFileURLs(urls) }
             case .failure:
                 break
             }
         }
         .onChange(of: selectedPhotos) { _, newItems in
             guard !newItems.isEmpty else { return }
-            Task { await stagePhotoItems(newItems) }
+            loadingTask = Task { await stagePhotoItems(newItems) }
         }
         .quickLookPreview($previewURL)
 #if DEBUG
@@ -70,6 +76,28 @@ struct UploadSheet: View {
             }
         }
 #endif
+    }
+
+    // MARK: - File loading view
+
+    private func fileLoadingView(current: Int, total: Int) -> some View {
+        VStack(spacing: 20) {
+            ProgressView(value: Double(current), total: Double(total))
+                .padding(.horizontal, 40)
+            Text(current == 0 ? "Preparing files…" : "Loading \(current) of \(total)…")
+                .foregroundStyle(.secondary)
+            Button("Cancel", role: .cancel) { cancelLoading() }
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func cancelLoading() {
+        loadingTask?.cancel()
+        loadingTask = nil
+        loadingProgress = nil
+        viewModel.phase = .idle
     }
 
     // MARK: - Idle view
@@ -286,29 +314,48 @@ struct UploadSheet: View {
     // MARK: - Helpers
 
     private func stageFileURLs(_ urls: [URL]) async {
+        loadingProgress = (0, urls.count)
         var tasks: [UploadTask] = []
-        for url in urls {
+        for (i, url) in urls.enumerated() {
+            guard !Task.isCancelled else { break }
+            loadingProgress = (i, urls.count)
             let filename = url.lastPathComponent
             let contentType = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType ?? "application/octet-stream"
             guard url.startAccessingSecurityScopedResource() else { continue }
-            defer { url.stopAccessingSecurityScopedResource() }
-            guard let data = try? Data(contentsOf: url) else { continue }
+            // Read file data off the main thread to avoid blocking the UI
+            let data = await Task.detached(priority: .userInitiated) {
+                try? Data(contentsOf: url)
+            }.value
+            url.stopAccessingSecurityScopedResource()
+            guard let data else { continue }
             tasks.append(UploadTask(filename: filename, data: data, contentType: contentType))
+            loadingProgress = (i + 1, urls.count)
         }
+        loadingProgress = nil
+        guard !Task.isCancelled else { return }
         viewModel.stageFiles(tasks)
     }
 
     private func stagePhotoItems(_ items: [PhotosPickerItem]) async {
+        loadingProgress = (0, items.count)
         var tasks: [UploadTask] = []
-        for item in items {
-            guard let data = try? await item.loadTransferable(type: Data.self) else { continue }
+        for (i, item) in items.enumerated() {
+            guard !Task.isCancelled else { break }
+            loadingProgress = (i, items.count)
+            guard let data = try? await item.loadTransferable(type: Data.self) else {
+                loadingProgress = (i + 1, items.count)
+                continue
+            }
             let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
             let filename = "\(item.itemIdentifier ?? UUID().uuidString).\(ext)"
             let contentType = item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
             tasks.append(UploadTask(filename: filename, data: data, contentType: contentType))
+            loadingProgress = (i + 1, items.count)
         }
-        viewModel.stageFiles(tasks)
+        loadingProgress = nil
         selectedPhotos = []
+        guard !Task.isCancelled else { return }
+        viewModel.stageFiles(tasks)
     }
 
     private func makeTempFile(for task: UploadTask) -> URL {
