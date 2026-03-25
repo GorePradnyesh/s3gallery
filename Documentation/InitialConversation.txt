@@ -27,3 +27,23 @@ Feature Request #2:
 - Report success / error of upload on completion of the upload operation. Add error details if the upload does fail.
 - When uploading ask the user if they want to preview the asset on upload. 
 - Add unit testing and integration testing. 
+(COMPLETED)
+
+-----
+Feature Request #3
+- Allow upload of multiple files together. 
+- Files should upload in parallel async. Throttle the uploads to not kill the bandwidth. Resize the upload queue dynamically. Explain your plan for how you are goign to do this.
+- If any of the files failed list them and allow a preview of those local files if possible
+
+----
+
+Feature Request #3
+- In the "file browser" the user should be able to do "Open in". i.e. I should be able to open a file in another app .. a photo in lightroom, a .epub in Books etc.
+- The user should also be able to share a copy of the file 
+- maybe a good pattern would be selection of the file and then showing share, open in and other options. Interview me and ask for different options
+
+---
+
+Feature Request #4
+
+Enable the user to pinch in and out in the grid view much like the viwe in iphone. Limit the "zoom-in" to the current grid size and limit the zoom out to be 20 images wide.

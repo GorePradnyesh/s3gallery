@@ -28,7 +28,7 @@ final class UploadFlowTests: XCTestCase {
         app.launch()
 
         navigateToTestBucket()
-        let lockIcon = app.images["Read only bucket"]
+        let lockIcon = app.buttons["Read only bucket"]
         XCTAssertTrue(lockIcon.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["Upload file"].exists)
     }
@@ -92,8 +92,8 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["View"].waitForExistence(timeout: 5))
         app.buttons["View"].tap()
 
-        // Viewer dismisses with Done
-        let doneButton = app.buttons["Done"]
+        // Viewer dismisses with Done (use navigationBars to avoid ambiguity with UploadSheet's Done)
+        let doneButton = app.navigationBars.buttons["Done"]
         XCTAssertTrue(doneButton.waitForExistence(timeout: 5))
         doneButton.tap()
     }

@@ -24,7 +24,7 @@ final class LoginFlowTests: XCTestCase {
 
     func testLoginWithInvalidCredentialsShowsError() throws {
         // Mock is configured to fail for "BADINVALID" key
-        app.launchArguments = ["--uitesting", "--mock-s3-failure"]
+        app.launchArguments = ["--uitesting", "--mock-s3-failure", "--no-keychain"]
         app.terminate()
         app.launch()
 
