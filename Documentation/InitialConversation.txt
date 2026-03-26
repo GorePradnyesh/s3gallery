@@ -35,6 +35,8 @@ Feature Request #3
 - Files should upload in parallel async. Throttle the uploads to not kill the bandwidth. Resize the upload queue dynamically. Explain your plan for how you are goign to do this.
 - If any of the files failed list them and allow a preview of those local files if possible
 - Add unittest and UI tests for this
+
+(COMPLETED)
 ----
 
 Feature Request #4
@@ -42,19 +44,28 @@ Feature Request #4
 - The user should also be able to share a copy of the file 
 - maybe a good pattern would be selection of the file and then showing share, open in and other options. Interview me and ask for different options
 - Add unittest and UI tests for this
+(COMPLETED)
 -----
 Feature Request #5
 
 - Enable the user to pinch in and out in the grid view much like the viwe in iphone. 
 - Limit the "zoom-in" to 3 items wide and limit the zoom out to be 20 items wide.
 - Add unittest and UI tests for this
-
+(COMPLETED)
 -----
 
 Feature Request #6
-- Add a drop shadow to FAB. Make it a light color when in dark mode.
-
+- Add a drop shadow to FAB. Make the shadow a light color when in dark mode. Ths way it can be clearly seen when overlayed on photos
+(COMPLETED)
 ----- 
 Feature Request #7
+Make the AWS regions a drop down instead of a text field.
+(COMPLETED)
+---- 
+Feature Requet #8
+Cache 1/4 rez 
 
-make the AWS regions a drop down instead of a text field.
+-----
+Feature Reqest #9
+When in preview mode, enable right and left swipe to navigate to adjacent photos.
+

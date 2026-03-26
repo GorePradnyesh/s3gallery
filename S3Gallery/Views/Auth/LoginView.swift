@@ -5,8 +5,24 @@ struct LoginView: View {
     @FocusState private var focusedField: Field?
 
     private enum Field: Hashable {
-        case accessKeyId, secretAccessKey, region
+        case accessKeyId, secretAccessKey
     }
+
+    private static let awsRegions = [
+        "us-east-1", "us-east-2",
+        "us-west-1", "us-west-2",
+        "af-south-1",
+        "ap-east-1", "ap-south-1", "ap-south-2",
+        "ap-northeast-1", "ap-northeast-2", "ap-northeast-3",
+        "ap-southeast-1", "ap-southeast-2", "ap-southeast-3", "ap-southeast-4",
+        "ca-central-1", "ca-west-1",
+        "eu-central-1", "eu-central-2",
+        "eu-west-1", "eu-west-2", "eu-west-3",
+        "eu-north-1", "eu-south-1", "eu-south-2",
+        "il-central-1",
+        "me-central-1", "me-south-1",
+        "sa-east-1",
+    ]
 
     var body: some View {
         NavigationStack {
@@ -58,21 +74,13 @@ struct LoginView: View {
                 isSecure: true
             )
             .focused($focusedField, equals: .secretAccessKey)
-            .submitLabel(.next)
-            .onSubmit { focusedField = .region }
-
-            LabeledTextField(
-                label: "AWS Region",
-                placeholder: "us-east-1",
-                text: $viewModel.region,
-                autocapitalization: .never
-            )
-            .focused($focusedField, equals: .region)
             .submitLabel(.go)
             .onSubmit {
                 focusedField = nil
                 Task { await viewModel.login() }
             }
+
+            LabeledRegionPicker(selection: $viewModel.region, regions: Self.awsRegions)
         }
     }
 
@@ -113,7 +121,40 @@ struct LoginView: View {
     }
 }
 
-// MARK: - Helper component
+// MARK: - Helper components
+
+private struct LabeledRegionPicker: View {
+    @Binding var selection: String
+    let regions: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("AWS Region")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+            Menu {
+                Picker("AWS Region", selection: $selection) {
+                    ForEach(regions, id: \.self) { region in
+                        Text(region).tag(region)
+                    }
+                }
+            } label: {
+                HStack {
+                    Text(selection)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+            }
+            .accessibilityIdentifier("AWS Region")
+        }
+    }
+}
 
 private struct LabeledTextField: View {
     let label: String
