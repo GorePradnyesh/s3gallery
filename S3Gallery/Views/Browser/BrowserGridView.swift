@@ -1,19 +1,25 @@
 import SwiftUI
 
+func clampedColumnCount(current: Int, scale: CGFloat) -> Int {
+    let raw = Double(current) / Double(scale)
+    return max(3, min(20, Int(raw.rounded())))
+}
+
 struct BrowserGridView: View {
     let items: [S3Item]
     let s3Service: any S3ServiceProtocol
     let viewModel: BrowserViewModel
+    @Binding var columnCount: Int
     let onSelectItem: (S3Item) -> Void
     let onAction: (S3FileItem, FileAction) -> Void
 
-    private let columns = [
-        GridItem(.adaptive(minimum: 100, maximum: 150), spacing: 2)
-    ]
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 2), count: columnCount)
+    }
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 2) {
+            LazyVGrid(columns: gridColumns, spacing: 2) {
                 ForEach(items) { item in
                     GridCell(
                         item: item,
@@ -34,7 +40,13 @@ struct BrowserGridView: View {
                     }
                 }
             }
+            // Attaches a UIPinchGestureRecognizer to the parent UIScrollView so pinch
+            // takes priority over scroll — SwiftUI's MagnificationGesture conflicts with
+            // ScrollView's own pan recognizer and causes accidental scrolling.
+            .background(GridPinchHandler(columnCount: $columnCount))
         }
+        .accessibilityIdentifier("grid-scroll-view")
+        .accessibilityValue("\(columnCount)")
     }
 
     private func isSelected(_ item: S3Item) -> Bool {
@@ -70,6 +82,83 @@ struct BrowserGridView: View {
         .accessibilityIdentifier("context-menu-select")
     }
 }
+
+// MARK: - Pinch handler
+
+// Transparent view placed inside the ScrollView content. On first layout it walks
+// up the UIKit hierarchy to find the UIScrollView, then attaches a
+// UIPinchGestureRecognizer directly to it. During a pinch:
+//   • scrolling is disabled so two-finger panning doesn't interfere
+//   • columnCount updates live for immediate visual feedback
+//   • scrolling re-enables when the pinch ends/cancels
+private struct GridPinchHandler: UIViewRepresentable {
+    @Binding var columnCount: Int
+
+    func makeCoordinator() -> Coordinator { Coordinator($columnCount) }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.columnCount = $columnCount
+        guard context.coordinator.attachedScrollView == nil else { return }
+        DispatchQueue.main.async {
+            guard context.coordinator.attachedScrollView == nil,
+                  let sv = uiView.firstAncestor(ofType: UIScrollView.self) else { return }
+            context.coordinator.attach(to: sv)
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var columnCount: Binding<Int>
+        weak var attachedScrollView: UIScrollView?
+        private var startCount = 0
+
+        init(_ binding: Binding<Int>) { self.columnCount = binding }
+
+        func attach(to scrollView: UIScrollView) {
+            attachedScrollView = scrollView
+            let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handle(_:)))
+            pinch.delegate = self
+            scrollView.addGestureRecognizer(pinch)
+        }
+
+        @objc func handle(_ r: UIPinchGestureRecognizer) {
+            switch r.state {
+            case .began:
+                startCount = columnCount.wrappedValue
+                attachedScrollView?.isScrollEnabled = false
+            case .changed:
+                columnCount.wrappedValue = clampedColumnCount(current: startCount, scale: r.scale)
+            case .ended, .cancelled, .failed:
+                columnCount.wrappedValue = clampedColumnCount(current: startCount, scale: r.scale)
+                attachedScrollView?.isScrollEnabled = true
+            default:
+                break
+            }
+        }
+
+        func gestureRecognizer(_ g: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+    }
+}
+
+private extension UIView {
+    func firstAncestor<T: UIView>(ofType: T.Type) -> T? {
+        var v: UIView? = superview
+        while let current = v {
+            if let typed = current as? T { return typed }
+            v = current.superview
+        }
+        return nil
+    }
+}
+
+// MARK: - Grid cell
 
 private struct GridCell: View {
     let item: S3Item
@@ -117,7 +206,7 @@ private struct GridCell: View {
                 }
             }
         }
-        .frame(height: 110)
+        .aspectRatio(1, contentMode: .fit)
         .clipShape(Rectangle())
         .task { await loadThumbnail() }
         .accessibilityLabel(item.name)

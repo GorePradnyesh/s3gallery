@@ -25,6 +25,8 @@ struct BrowserView: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     @State private var viewMode: ViewMode = .grid
+    @State private var gridColumnCount: Int = Self.defaultGridColumnCount()
+
     @State private var activeSheet: BrowserSheet?
     @State private var fileActionService = FileActionService()
     @State private var isDownloadingForAction = false
@@ -231,6 +233,7 @@ struct BrowserView: View {
                 items: viewModel.sortedItems,
                 s3Service: viewModel.s3Service,
                 viewModel: viewModel,
+                columnCount: $gridColumnCount,
                 onSelectItem: { handleSelection($0) },
                 onAction: { handleAction($1, items: [$0]) }
             )
@@ -283,6 +286,12 @@ struct BrowserView: View {
                     .accessibilityIdentifier("Settings")
             }
         }
+    }
+
+    // Target ~130pt per tile: gives 3 columns on all iPhones, ~6 on iPad, ~8 on iPad Pro 13"
+    private static func defaultGridColumnCount() -> Int {
+        let width = UIScreen.main.bounds.width
+        return max(3, min(20, Int((width / 130).rounded())))
     }
 
     private var navigationTitle: String {

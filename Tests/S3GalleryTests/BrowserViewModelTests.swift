@@ -216,3 +216,44 @@ struct BrowserViewModelTests {
         #expect(mock.checkWriteAccessCalls.count == 2)
     }
 }
+
+// MARK: - Grid column count clamping
+
+@Suite("GridColumnCount")
+struct GridColumnCountTests {
+
+    @Test("scale 1.0 leaves count unchanged")
+    func noChange() {
+        #expect(clampedColumnCount(current: 5, scale: 1.0) == 5)
+    }
+
+    @Test("pinch in halves column count")
+    func pinchInHalves() {
+        #expect(clampedColumnCount(current: 10, scale: 2.0) == 5)
+    }
+
+    @Test("pinch out doubles column count")
+    func pinchOutDoubles() {
+        #expect(clampedColumnCount(current: 5, scale: 0.5) == 10)
+    }
+
+    @Test("extreme pinch in clamps to minimum 3")
+    func pinchInClamps() {
+        #expect(clampedColumnCount(current: 5, scale: 10.0) == 3)
+    }
+
+    @Test("extreme pinch out clamps to maximum 20")
+    func pinchOutClamps() {
+        #expect(clampedColumnCount(current: 5, scale: 0.1) == 20)
+    }
+
+    @Test("already at min 3, further pinch in stays at 3")
+    func minBoundary() {
+        #expect(clampedColumnCount(current: 3, scale: 2.0) == 3)
+    }
+
+    @Test("already at max 20, further pinch out stays at 20")
+    func maxBoundary() {
+        #expect(clampedColumnCount(current: 20, scale: 0.5) == 20)
+    }
+}

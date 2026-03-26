@@ -24,8 +24,8 @@ final class BrowseFlowTests: XCTestCase {
         XCTAssertTrue(bucketCell.waitForExistence(timeout: 5))
         bucketCell.tap()
 
-        // Should show breadcrumb bar
-        let breadcrumb = app.staticTexts["test-bucket"]
+        // Breadcrumb bar shows the bucket name as a button (nav title is suppressed in compact portrait)
+        let breadcrumb = app.buttons.matching(NSPredicate(format: "label == 'test-bucket'")).firstMatch
         XCTAssertTrue(breadcrumb.waitForExistence(timeout: 3))
     }
 
@@ -45,6 +45,27 @@ final class BrowseFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Switch to list view"].waitForExistence(timeout: 3))
     }
 
+    func testPinchZoomGridViewIsAccessible() {
+        // Verifies the grid scroll view has the correct accessibility setup for pinch-to-zoom.
+        // Column count logic is covered by GridColumnCountTests unit tests.
+        // SwiftUI MagnificationGesture cannot be reliably triggered via XCTest simulator.
+        let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        XCTAssertTrue(bucketCell.waitForExistence(timeout: 5))
+        bucketCell.tap()
+
+        let grid = app.scrollViews["grid-scroll-view"]
+        XCTAssertTrue(grid.waitForExistence(timeout: 5))
+
+        // Grid starts at 5 columns (default)
+        XCTAssertEqual(grid.value as? String, "5")
+
+        // Simulate pinches — app should remain stable (no crash)
+        grid.pinch(withScale: 0.3, velocity: -2)
+        XCTAssertTrue(grid.exists)
+        grid.pinch(withScale: 3.0, velocity: 2)
+        XCTAssertTrue(grid.exists)
+    }
+
     func testBreadcrumbNavigationPopsToParent() {
         let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
         XCTAssertTrue(bucketCell.waitForExistence(timeout: 5))
@@ -56,7 +77,8 @@ final class BrowseFlowTests: XCTestCase {
             folder.tap()
             // Tap the bucket breadcrumb to go back
             app.buttons["test-bucket"].tap()
-            XCTAssertTrue(app.staticTexts["test-bucket"].exists)
+            // After popping back, breadcrumb still shows the bucket name as a button
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label == 'test-bucket'")).firstMatch.exists)
         }
     }
 }
