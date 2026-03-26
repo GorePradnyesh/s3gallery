@@ -3,7 +3,9 @@ import SwiftUI
 struct BrowserGridView: View {
     let items: [S3Item]
     let s3Service: any S3ServiceProtocol
+    let viewModel: BrowserViewModel
     let onSelectItem: (S3Item) -> Void
+    let onAction: (S3FileItem, FileAction) -> Void
 
     private let columns = [
         GridItem(.adaptive(minimum: 100, maximum: 150), spacing: 2)
@@ -13,17 +15,66 @@ struct BrowserGridView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(items) { item in
-                    GridCell(item: item, s3Service: s3Service)
-                        .onTapGesture { onSelectItem(item) }
+                    GridCell(
+                        item: item,
+                        s3Service: s3Service,
+                        isSelected: isSelected(item)
+                    )
+                    .onTapGesture {
+                        if viewModel.isSelectionMode, case .file(let fi) = item {
+                            viewModel.toggleSelection(fi)
+                        } else {
+                            onSelectItem(item)
+                        }
+                    }
+                    .contextMenu {
+                        if case .file(let fi) = item {
+                            fileContextMenu(for: fi)
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private func isSelected(_ item: S3Item) -> Bool {
+        guard case .file(let fi) = item else { return false }
+        return viewModel.selectedItems.contains(fi)
+    }
+
+    @ViewBuilder
+    private func fileContextMenu(for item: S3FileItem) -> some View {
+        let category = FileTypeDetector.category(for: item)
+
+        Button { onAction(item, .share) } label: {
+            Label("Share", systemImage: "square.and.arrow.up")
+        }
+        Button { onAction(item, .openIn) } label: {
+            Label("Open In", systemImage: "arrow.up.forward.app")
+        }
+        if category == .image || category == .video {
+            Button { onAction(item, .saveToPhotos) } label: {
+                Label("Save to Photos", systemImage: "square.and.arrow.down")
+            }
+        }
+        Button { onAction(item, .copyToFiles) } label: {
+            Label("Copy to Files", systemImage: "folder.badge.plus")
+        }
+        Divider()
+        Button {
+            viewModel.enterSelectionMode()
+            viewModel.toggleSelection(item)
+        } label: {
+            Label("Select", systemImage: "checkmark.circle")
+        }
+        .accessibilityIdentifier("Select")
     }
 }
 
 private struct GridCell: View {
     let item: S3Item
     let s3Service: any S3ServiceProtocol
+    var isSelected: Bool = false
 
     @State private var thumbnail: UIImage?
     @State private var isLoading = false
@@ -51,11 +102,26 @@ private struct GridCell: View {
                         .padding(.horizontal, 4)
                 }
             }
+
+            if isSelected {
+                Color.accentColor.opacity(0.25)
+                VStack {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(Color.white, Color.accentColor)
+                            .padding(6)
+                    }
+                    Spacer()
+                }
+            }
         }
         .frame(height: 110)
         .clipShape(Rectangle())
         .task { await loadThumbnail() }
         .accessibilityLabel(item.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func loadThumbnail() async {

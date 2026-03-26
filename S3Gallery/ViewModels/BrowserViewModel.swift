@@ -54,6 +54,7 @@ final class BrowserViewModel {
 
     func enterBucket(_ bucket: String) async {
         currentBucketHasWriteAccess = nil
+        exitSelectionMode()
         let state = BrowseState(bucket: bucket, prefix: "")
         navigationStack = [state]
         await loadCurrentFolder()
@@ -62,6 +63,7 @@ final class BrowserViewModel {
 
     func enterFolder(name: String, prefix: String) async {
         guard let current = currentState else { return }
+        exitSelectionMode()
         let state = BrowseState(bucket: current.bucket, prefix: prefix)
         navigationStack.append(state)
         await loadCurrentFolder()
@@ -134,6 +136,36 @@ final class BrowserViewModel {
         }
 
         return sortedFolders + sortedFiles
+    }
+
+    // MARK: - Selection
+
+    var isSelectionMode = false
+    private(set) var selectedItems: Set<S3FileItem> = []
+
+    func enterSelectionMode() {
+        isSelectionMode = true
+        selectedItems = []
+    }
+
+    func exitSelectionMode() {
+        isSelectionMode = false
+        selectedItems = []
+    }
+
+    func toggleSelection(_ item: S3FileItem) {
+        if selectedItems.contains(item) {
+            selectedItems.remove(item)
+        } else {
+            selectedItems.insert(item)
+        }
+    }
+
+    var canSaveSelectedToPhotos: Bool {
+        !selectedItems.isEmpty && selectedItems.allSatisfy {
+            let cat = FileTypeDetector.category(for: $0)
+            return cat == .image || cat == .video
+        }
     }
 
     // MARK: - Private

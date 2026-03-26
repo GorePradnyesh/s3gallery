@@ -433,4 +433,53 @@ Test Gate
 
   Unit: swift test --filter UploadViewModelTests,AdaptiveThrottleTests — all pass
   UI:   S3GalleryUITests/UploadFlowTests — all pass in simulator
+
+---
+
+Feature Request #4 — File Sharing & Open In
+
+Adds share, open-in, save-to-photos, and copy-to-files actions accessible via long-press context menu (single file), selection mode action bar (multi-file), and a share button inside all file viewers.
+
+User Decisions
+  - Triggers: Long press context menu (single file) + Select button → selection mode (multi-file) + viewer toolbar button
+  - Actions: Share (system sheet), Open In, Save to Photos, Copy to Files
+  - File delivery: Download full file to temp dir first, show progress, then present action
+
+New Files
+  S3Gallery/Services/FileActionService.swift          — download-to-temp, saveToPhotos; injectable URLSession
+  S3Gallery/Views/Shared/ActivityViewController.swift — UIViewControllerRepresentable for UIActivityViewController
+  S3Gallery/Views/Shared/DocumentPickerExporter.swift — UIViewControllerRepresentable for UIDocumentPickerViewController (export)
+  S3Gallery/Views/Browser/SelectionActionBar.swift    — bottom action bar in selection mode
+  Tests/S3GalleryTests/FileActionServiceTests.swift          — unit: download, cleanup, mock URLProtocol
+  Tests/S3GalleryTests/BrowserViewModelSelectionTests.swift  — unit: enter/exit mode, toggle, multi-select
+  Tests/S3GalleryUITests/FileActionFlowTests.swift           — UI: context menu, selection mode, share sheet
+
+Modified Files
+  S3Gallery/ViewModels/BrowserViewModel.swift         — isSelectionMode, selectedItems: Set<S3FileItem>, enter/exit/toggle
+  S3Gallery/Views/Browser/BrowserView.swift           — Select button, BrowserSheet .share/.copyToFiles cases, handleAction() orchestration
+  S3Gallery/Views/Browser/BrowserGridView.swift       — .contextMenu on GridCell, selection checkmark overlay
+  S3Gallery/Views/Browser/BrowserListView.swift       — .contextMenu on rows, checkmark in selection mode
+  S3Gallery/Views/Browser/S3ItemRow.swift             — isSelected: Bool param, checkmark indicator
+  S3Gallery/Views/Browser/BrowserToolbar.swift        — Select/Done button, hide Sort/ViewMode in selection mode
+  S3Gallery/Views/Viewer/ViewerContainer.swift        — pass onShare closure to each viewer, own download+share logic
+  S3Gallery/Views/Viewer/PhotoViewer.swift            — share ToolbarItem
+  S3Gallery/Views/Viewer/VideoPlayerView.swift        — share ToolbarItem
+  S3Gallery/Views/Viewer/PDFViewerView.swift          — share ToolbarItem
+  S3Gallery/Views/Viewer/AudioPlayerView.swift        — share ToolbarItem
+  S3Gallery/Views/Viewer/GenericFileView.swift        — share ToolbarItem (reuse existing downloaded URL)
+  S3Gallery/Info.plist                                — NSPhotoLibraryAddUsageDescription
+  S3Gallery/Testing/UITestSupport.swift               — --mock-file-action launch arg
+
+Key Decisions
+  - UIActivityViewController(activityItems: [URL]) covers both Share and Open In — iOS shows compatible apps
+    automatically when given a local file URL; UIDocumentInteractionController not needed
+  - FileActionService is @Observable @MainActor, owned as @State in BrowserView and ViewerContainer
+  - Download uses UUID-prefixed temp subdirs to avoid collisions during bulk selection downloads
+  - Cleanup via onDismiss callbacks on share/copy sheets; immediate after saveToPhotos
+  - Context menu "Select" pre-selects the long-pressed file and enters selection mode
+  - FAB hidden when isSelectionMode is true (overlaps with SelectionActionBar)
+
+Test Gate
+  Unit: swift test --filter FileActionServiceTests,BrowserViewModelSelectionTests — all pass
+  UI:   S3GalleryUITests/FileActionFlowTests — all pass in simulator (requires --mock-file-action)
   Manual: Select 5+ mixed files, verify adaptive throttle logs, verify QuickLook preview on failed file

@@ -14,6 +14,7 @@ enum UITestArgs {
     static var mockUploadFailure:   Bool { CommandLine.arguments.contains("--mock-upload-failure") }
     static var autoStage:           Bool { CommandLine.arguments.contains("--auto-stage") }
     static var mockPartialFailure:  Bool { CommandLine.arguments.contains("--mock-partial-failure") }
+    static var mockFileAction:      Bool { CommandLine.arguments.contains("--mock-file-action") }
 }
 
 // MARK: - In-process mock S3 service for UI tests

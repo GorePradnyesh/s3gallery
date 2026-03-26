@@ -3,6 +3,8 @@ import SwiftUI
 struct S3ItemRow: View {
     let item: S3Item
     var thumbnail: UIImage? = nil
+    var isSelected: Bool = false
+    var inSelectionMode: Bool = false
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -25,7 +27,11 @@ struct S3ItemRow: View {
                 }
             }
             Spacer()
-            if case .folder = item {
+            if inSelectionMode, case .file = item {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .font(.title3)
+            } else if case .folder = item {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.tertiary)

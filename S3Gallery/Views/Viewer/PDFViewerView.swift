@@ -4,6 +4,7 @@ import PDFKit
 struct PDFViewerView: View {
     let url: URL
     let fileName: String
+    var onShare: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -13,6 +14,17 @@ struct PDFViewerView: View {
                 .navigationTitle(fileName)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        if onShare != nil {
+                            Button {
+                                onShare?()
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                            }
+                            .accessibilityLabel("Share")
+                            .accessibilityIdentifier("Share")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button("Done") { dismiss() }
                     }

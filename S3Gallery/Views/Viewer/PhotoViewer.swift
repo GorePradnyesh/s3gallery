@@ -3,6 +3,7 @@ import SwiftUI
 struct PhotoViewer: View {
     let url: URL
     let fileName: String
+    var onShare: (() -> Void)? = nil
 
     @State private var scale: CGFloat = 1
     @State private var lastScale: CGFloat = 1
@@ -39,6 +40,17 @@ struct PhotoViewer: View {
             .navigationTitle(fileName)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if onShare != nil {
+                        Button {
+                            onShare?()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .accessibilityLabel("Share")
+                        .accessibilityIdentifier("Share")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
