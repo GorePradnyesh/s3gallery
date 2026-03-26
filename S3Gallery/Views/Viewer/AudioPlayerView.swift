@@ -71,8 +71,6 @@ final class AudioPlayerController: NSObject, AVAudioPlayerDelegate {
 struct AudioPlayerView: View {
     let url: URL
     let fileName: String
-    var onShare: (() -> Void)? = nil
-    @Environment(\.dismiss) private var dismiss
 
     @State private var controller = AudioPlayerController()
 
@@ -102,27 +100,6 @@ struct AudioPlayerView: View {
             Spacer()
         }
         .padding()
-        .navigationTitle("Audio")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if onShare != nil {
-                    Button {
-                        onShare?()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .accessibilityLabel("Share")
-                    .accessibilityIdentifier("Share")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") {
-                    controller.stop()
-                    dismiss()
-                }
-            }
-        }
         .task { controller.load(url: url) }
         .onDisappear { controller.stop() }
     }

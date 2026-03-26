@@ -3,29 +3,18 @@ import SwiftUI
 struct PhotoViewer: View {
     let url: URL
     let fileName: String
-    var onShare: (() -> Void)? = nil
 
     @State private var scale: CGFloat = 1
     @State private var lastScale: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         GeometryReader { geo in
             AsyncImage(url: url) { phase in
                 switch phase {
                 case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .scaleEffect(scale)
-                        .offset(offset)
-                        .gesture(magnifyGesture)
-                        .gesture(dragGesture)
-                        .onTapGesture(count: 2) { resetZoom() }
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
+                    photoContent(image: image, geo: geo)
                 case .failure:
                     ContentUnavailableView("Failed to Load", systemImage: "photo.badge.exclamationmark", description: Text("Could not load the image."))
                 default:
@@ -36,23 +25,24 @@ struct PhotoViewer: View {
         }
         .background(Color.black)
         .ignoresSafeArea(edges: .bottom)
-        .navigationTitle(fileName)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if onShare != nil {
-                    Button {
-                        onShare?()
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .accessibilityLabel("Share")
-                    .accessibilityIdentifier("Share")
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("Done") { dismiss() }
-            }
+    }
+
+    @ViewBuilder
+    private func photoContent(image: Image, geo: GeometryProxy) -> some View {
+        let base = image
+            .resizable()
+            .scaledToFit()
+            .scaleEffect(scale)
+            .offset(offset)
+            .gesture(magnifyGesture)
+            .onTapGesture(count: 2) { resetZoom() }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
+
+        if scale > 1 {
+            base.gesture(dragGesture)
+        } else {
+            base
         }
     }
 
@@ -70,7 +60,6 @@ struct PhotoViewer: View {
     private var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-                guard scale > 1 else { return }
                 offset = CGSize(
                     width: lastOffset.width + value.translation.width,
                     height: lastOffset.height + value.translation.height

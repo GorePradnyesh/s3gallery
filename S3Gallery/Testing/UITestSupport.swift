@@ -40,6 +40,8 @@ final class UITestMockS3Service: S3ServiceProtocol {
             return [
                 .folder(name: "photos", prefix: "photos/"),
                 .folder(name: "videos", prefix: "videos/"),
+                .file(S3FileItem(key: "autumn.jpg", bucket: bucket, size: 1_800_000,
+                                 lastModified: Date(), eTag: nil)),
                 .file(S3FileItem(key: "readme.txt", bucket: bucket, size: 512,
                                  lastModified: Date(), eTag: nil)),
                 .file(S3FileItem(key: "sunset.jpg", bucket: bucket, size: 2_048_000,

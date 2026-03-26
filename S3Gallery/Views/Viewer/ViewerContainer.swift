@@ -4,6 +4,8 @@ import SwiftUI
 struct ViewerContainer: View {
     let item: S3FileItem
     let s3Service: any S3ServiceProtocol
+    var index: Int
+    var onShareReady: (Int, (() -> Void)?) -> Void
 
     @State private var viewModel: ViewerViewModel
     @State private var fileActionService = FileActionService()
@@ -11,9 +13,16 @@ struct ViewerContainer: View {
     @State private var isPreparingShare = false
     @State private var shareError: String?
 
-    init(item: S3FileItem, s3Service: any S3ServiceProtocol) {
+    init(
+        item: S3FileItem,
+        s3Service: any S3ServiceProtocol,
+        index: Int = 0,
+        onShareReady: @escaping (Int, (() -> Void)?) -> Void = { _, _ in }
+    ) {
         self.item = item
         self.s3Service = s3Service
+        self.index = index
+        self.onShareReady = onShareReady
         self._viewModel = State(initialValue: ViewerViewModel(item: item, s3Service: s3Service))
     }
 
@@ -29,6 +38,17 @@ struct ViewerContainer: View {
             }
         }
         .task { await viewModel.loadPresignedURL() }
+        .onChange(of: viewModel.loadState) { _, newState in
+            switch newState {
+            case .ready(let url):
+                let idx = index
+                onShareReady(idx) { [self] in handleShare(presignedURL: url) }
+            case .error:
+                onShareReady(index, nil)
+            default:
+                break
+            }
+        }
         .sheet(isPresented: Binding(
             get: { shareLocalURL != nil },
             set: { if !$0 { cleanupShare() } }
@@ -81,15 +101,15 @@ struct ViewerContainer: View {
     private func viewerForCategory(url: URL) -> some View {
         switch viewModel.fileCategory {
         case .image:
-            PhotoViewer(url: url, fileName: viewModel.fileName, onShare: { handleShare(presignedURL: url) })
+            PhotoViewer(url: url, fileName: viewModel.fileName)
         case .video:
-            VideoPlayerView(url: url, fileName: viewModel.fileName, onShare: { handleShare(presignedURL: url) })
+            VideoPlayerView(url: url, fileName: viewModel.fileName)
         case .pdf:
-            PDFViewerView(url: url, fileName: viewModel.fileName, onShare: { handleShare(presignedURL: url) })
+            PDFViewerView(url: url, fileName: viewModel.fileName)
         case .audio:
-            AudioPlayerView(url: url, fileName: viewModel.fileName, onShare: { handleShare(presignedURL: url) })
+            AudioPlayerView(url: url, fileName: viewModel.fileName)
         case .other:
-            GenericFileView(url: url, fileName: viewModel.fileName, onShare: { handleShare(presignedURL: url) })
+            GenericFileView(url: url, fileName: viewModel.fileName)
         }
     }
 
