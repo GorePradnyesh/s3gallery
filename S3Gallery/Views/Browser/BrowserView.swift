@@ -21,6 +21,9 @@ struct BrowserView: View {
     let credentials: Credentials
     let onLogout: () -> Void
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     @State private var viewMode: ViewMode = .grid
     @State private var activeSheet: BrowserSheet?
     @State private var fileActionService = FileActionService()
@@ -241,9 +244,13 @@ struct BrowserView: View {
                 Button {
                     Task { await viewModel.popToRoot() }
                 } label: {
-                    HStack(spacing: 4) {
+                    if horizontalSizeClass == .compact && verticalSizeClass == .regular {
                         Image(systemName: "externaldrive")
-                        Text("Buckets")
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "externaldrive")
+                            Text("Buckets")
+                        }
                     }
                 }
             }
@@ -280,6 +287,7 @@ struct BrowserView: View {
 
     private var navigationTitle: String {
         guard let state = viewModel.currentState else { return "S3 Gallery" }
+        if !viewModel.isAtRoot && horizontalSizeClass == .compact && verticalSizeClass == .regular { return "" }
         return state.prefix.isEmpty ? state.bucket : (state.breadcrumbs.last?.name ?? state.bucket)
     }
 
