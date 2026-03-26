@@ -23,6 +23,7 @@ struct BrowserView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.colorScheme) private var colorScheme
 
     @State private var viewMode: ViewMode = .grid
     @State private var gridColumnCount: Int = Self.defaultGridColumnCount()
@@ -190,7 +191,7 @@ struct BrowserView: View {
                     .frame(width: 56, height: 56)
                 ProgressView()
             }
-            .shadow(radius: 4)
+            .shadow(color: colorScheme == .dark ? .white.opacity(0.4) : .black.opacity(0.3), radius: 6)
         } else if let hasWrite = viewModel.currentBucketHasWriteAccess {
             Button {
                 if hasWrite, let state = viewModel.currentState {
@@ -212,7 +213,7 @@ struct BrowserView: View {
                 }
             }
             .disabled(!hasWrite)
-            .shadow(radius: 4)
+            .shadow(color: colorScheme == .dark ? .white.opacity(0.4) : .black.opacity(0.3), radius: 6)
             .accessibilityLabel(hasWrite ? "Upload file" : "Read only bucket")
             .accessibilityIdentifier(hasWrite ? "Upload file" : "Read only bucket")
         }
