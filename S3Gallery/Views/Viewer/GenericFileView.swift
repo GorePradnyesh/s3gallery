@@ -13,38 +13,36 @@ struct GenericFileView: View {
     @State private var downloadProgress: Double = 0
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if let local = localURL {
-                    QuickLookView(url: local)
-                        .ignoresSafeArea(edges: .bottom)
-                } else if let error = downloadError {
-                    errorView(message: error)
-                } else {
-                    downloadingView
-                }
+        Group {
+            if let local = localURL {
+                QuickLookView(url: local)
+                    .ignoresSafeArea(edges: .bottom)
+            } else if let error = downloadError {
+                errorView(message: error)
+            } else {
+                downloadingView
             }
-            .navigationTitle(fileName)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if onShare != nil {
-                        Button {
-                            onShare?()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
-                        .accessibilityLabel("Share")
-                        .accessibilityIdentifier("Share")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .task { await download() }
-            .onDisappear { cleanupTempFile() }
         }
+        .navigationTitle(fileName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if onShare != nil {
+                    Button {
+                        onShare?()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share")
+                    .accessibilityIdentifier("Share")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Done") { dismiss() }
+            }
+        }
+        .task { await download() }
+        .onDisappear { cleanupTempFile() }
     }
 
     private var downloadingView: some View {

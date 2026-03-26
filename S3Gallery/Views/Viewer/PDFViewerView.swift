@@ -8,28 +8,26 @@ struct PDFViewerView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            PDFKitView(url: url)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(fileName)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        if onShare != nil {
-                            Button {
-                                onShare?()
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                            .accessibilityLabel("Share")
-                            .accessibilityIdentifier("Share")
+        PDFKitView(url: url)
+            .ignoresSafeArea(edges: .bottom)
+            .navigationTitle(fileName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if onShare != nil {
+                        Button {
+                            onShare?()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
                         }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
+                        .accessibilityLabel("Share")
+                        .accessibilityIdentifier("Share")
                     }
                 }
-        }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
     }
 }
 

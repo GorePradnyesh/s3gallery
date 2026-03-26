@@ -77,56 +77,54 @@ struct AudioPlayerView: View {
     @State private var controller = AudioPlayerController()
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 32) {
-                Spacer()
+        VStack(spacing: 32) {
+            Spacer()
 
-                Image(systemName: "music.note")
-                    .font(.system(size: 80))
-                    .foregroundStyle(.tint)
+            Image(systemName: "music.note")
+                .font(.system(size: 80))
+                .foregroundStyle(.tint)
 
-                Text(fileName)
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+            Text(fileName)
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
 
-                if let error = controller.error {
-                    Text(error)
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                } else if controller.isLoaded {
-                    playerControls
-                } else {
-                    ProgressView("Loading...")
-                }
-
-                Spacer()
+            if let error = controller.error {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            } else if controller.isLoaded {
+                playerControls
+            } else {
+                ProgressView("Loading...")
             }
-            .padding()
-            .navigationTitle("Audio")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if onShare != nil {
-                        Button {
-                            onShare?()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
-                        .accessibilityLabel("Share")
-                        .accessibilityIdentifier("Share")
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        controller.stop()
-                        dismiss()
-                    }
-                }
-            }
-            .task { controller.load(url: url) }
-            .onDisappear { controller.stop() }
+
+            Spacer()
         }
+        .padding()
+        .navigationTitle("Audio")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if onShare != nil {
+                    Button {
+                        onShare?()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Share")
+                    .accessibilityIdentifier("Share")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Done") {
+                    controller.stop()
+                    dismiss()
+                }
+            }
+        }
+        .task { controller.load(url: url) }
+        .onDisappear { controller.stop() }
     }
 
     private var playerControls: some View {

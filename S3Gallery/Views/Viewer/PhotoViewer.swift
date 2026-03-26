@@ -12,48 +12,46 @@ struct PhotoViewer: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            GeometryReader { geo in
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .scaleEffect(scale)
-                            .offset(offset)
-                            .gesture(magnifyGesture)
-                            .gesture(dragGesture)
-                            .onTapGesture(count: 2) { resetZoom() }
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .clipped()
-                    case .failure:
-                        ContentUnavailableView("Failed to Load", systemImage: "photo.badge.exclamationmark", description: Text("Could not load the image."))
-                    default:
-                        ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+        GeometryReader { geo in
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .scaleEffect(scale)
+                        .offset(offset)
+                        .gesture(magnifyGesture)
+                        .gesture(dragGesture)
+                        .onTapGesture(count: 2) { resetZoom() }
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                case .failure:
+                    ContentUnavailableView("Failed to Load", systemImage: "photo.badge.exclamationmark", description: Text("Could not load the image."))
+                default:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .background(Color.black)
-            .ignoresSafeArea(edges: .bottom)
-            .navigationTitle(fileName)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if onShare != nil {
-                        Button {
-                            onShare?()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
-                        .accessibilityLabel("Share")
-                        .accessibilityIdentifier("Share")
+        }
+        .background(Color.black)
+        .ignoresSafeArea(edges: .bottom)
+        .navigationTitle(fileName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if onShare != nil {
+                    Button {
+                        onShare?()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
                     }
+                    .accessibilityLabel("Share")
+                    .accessibilityIdentifier("Share")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Done") { dismiss() }
             }
         }
     }

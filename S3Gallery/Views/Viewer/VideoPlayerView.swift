@@ -17,29 +17,27 @@ struct VideoPlayerView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VideoPlayer(player: player)
-                .ignoresSafeArea(edges: .bottom)
-                .navigationTitle(fileName)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        if onShare != nil {
-                            Button {
-                                onShare?()
-                            } label: {
-                                Image(systemName: "square.and.arrow.up")
-                            }
-                            .accessibilityLabel("Share")
-                            .accessibilityIdentifier("Share")
+        VideoPlayer(player: player)
+            .ignoresSafeArea(edges: .bottom)
+            .navigationTitle(fileName)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if onShare != nil {
+                        Button {
+                            onShare?()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
                         }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") { dismiss() }
+                        .accessibilityLabel("Share")
+                        .accessibilityIdentifier("Share")
                     }
                 }
-                .onAppear { player.play() }
-                .onDisappear { player.pause() }
-        }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+            .onAppear { player.play() }
+            .onDisappear { player.pause() }
     }
 }

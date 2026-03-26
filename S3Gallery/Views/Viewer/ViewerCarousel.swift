@@ -15,13 +15,15 @@ struct ViewerCarousel: View {
     }
 
     var body: some View {
-        TabView(selection: $currentIndex) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                ViewerContainer(item: item, s3Service: s3Service)
-                    .tag(index)
+        NavigationStack {
+            TabView(selection: $currentIndex) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    ViewerContainer(item: item, s3Service: s3Service)
+                        .tag(index)
+                }
             }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .ignoresSafeArea()
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .ignoresSafeArea()
     }
 }
