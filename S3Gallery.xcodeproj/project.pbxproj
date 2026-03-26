@@ -47,6 +47,7 @@
 		BC5C027BCFC5638C71AA6E32 /* PhotoViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC8E4455DF521C9B69FC8C4 /* PhotoViewer.swift */; };
 		BFF7AE25E7AB4176CD940B1E /* ViewerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F1B3F8EBBAC55DF508259FA /* ViewerViewModelTests.swift */; };
 		C64C588E8DAEE91663C9EE6B /* ViewerContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D6AFD0E7D6F10BA29FE7BB /* ViewerContainer.swift */; };
+		C64C588E8DAEE91663C9EE6C /* ViewerCarousel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94D6AFD0E7D6F10BA29FE7BC /* ViewerCarousel.swift */; };
 		CFA3AF2A444EE505C929EAB3 /* BrowseState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68198408E682350F1E44B5C /* BrowseState.swift */; };
 		D65094F1C033D3862F179ADC /* GenericFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D053ACBF6B15042D98CFD47 /* GenericFileView.swift */; };
 		D7D7FA2EA4F8BF17355EE554 /* PDFViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4784627EB044F78D8A6D4542 /* PDFViewerView.swift */; };
@@ -115,6 +116,7 @@
 		8D053ACBF6B15042D98CFD47 /* GenericFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericFileView.swift; sourceTree = "<group>"; };
 		8D78056DDD3B608C5057C0DE /* CacheService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheService.swift; sourceTree = "<group>"; };
 		94D6AFD0E7D6F10BA29FE7BB /* ViewerContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewerContainer.swift; sourceTree = "<group>"; };
+		94D6AFD0E7D6F10BA29FE7BC /* ViewerCarousel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewerCarousel.swift; sourceTree = "<group>"; };
 		981FCE7F188ACD8CBAC04F62 /* Credentials.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Credentials.swift; sourceTree = "<group>"; };
 		9E97CF58EFC6F3F97C03E18C /* S3Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3Item.swift; sourceTree = "<group>"; };
 		AA11BB22CC33DD44EE55FF02 /* UploadTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadTask.swift; sourceTree = "<group>"; };
@@ -278,6 +280,7 @@
 				5DC8E4455DF521C9B69FC8C4 /* PhotoViewer.swift */,
 				1FED5DE28152CED18F778162 /* VideoPlayerView.swift */,
 				94D6AFD0E7D6F10BA29FE7BB /* ViewerContainer.swift */,
+				94D6AFD0E7D6F10BA29FE7BC /* ViewerCarousel.swift */,
 			);
 			path = Viewer;
 			sourceTree = "<group>";
@@ -506,6 +509,7 @@
 				B01551CD5CB245F193F845E5 /* UploadViewModel.swift in Sources */,
 				4A445D4F3281BD9EAC1E4162 /* VideoPlayerView.swift in Sources */,
 				C64C588E8DAEE91663C9EE6B /* ViewerContainer.swift in Sources */,
+				C64C588E8DAEE91663C9EE6C /* ViewerCarousel.swift in Sources */,
 				151FD9CA6B20BD789F59C78F /* ViewerViewModel.swift in Sources */,
 				3EEB802352024E249B862A6A /* FileActionService.swift in Sources */,
 				DF01D18B47BA43CCB900B8F5 /* SelectionActionBar.swift in Sources */,

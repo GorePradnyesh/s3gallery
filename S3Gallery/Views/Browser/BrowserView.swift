@@ -1,14 +1,14 @@
 import SwiftUI
 
 private enum BrowserSheet: Identifiable {
-    case viewer(S3FileItem)
+    case viewer(items: [S3FileItem], index: Int)
     case upload(BrowseState)
     case share([URL])
     case copyToFiles([URL])
 
     var id: String {
         switch self {
-        case .viewer(let item): return "viewer-\(item.id)"
+        case .viewer(let items, let index): return "viewer-\(items[index].id)"
         case .upload(let state): return "upload-\(state.bucket)-\(state.prefix)"
         case .share: return "share"
         case .copyToFiles: return "copyToFiles"
@@ -47,8 +47,8 @@ struct BrowserView: View {
             .toolbar { toolbarContent }
             .sheet(item: $activeSheet) { sheet in
                 switch sheet {
-                case .viewer(let item):
-                    ViewerContainer(item: item, s3Service: viewModel.s3Service)
+                case .viewer(let items, let index):
+                    ViewerCarousel(items: items, initialIndex: index, s3Service: viewModel.s3Service)
                 case .upload(let state):
                     UploadSheet(
                         viewModel: UploadViewModel(
@@ -306,7 +306,15 @@ struct BrowserView: View {
         case .folder(_, let prefix):
             Task { await viewModel.enterFolder(name: item.name, prefix: prefix) }
         case .file(let fileItem):
-            activeSheet = .viewer(fileItem)
+            if FileTypeDetector.category(for: fileItem) == .image {
+                let imageItems = viewModel.sortedItems.compactMap(\.fileItem).filter {
+                    FileTypeDetector.category(for: $0) == .image
+                }
+                let index = imageItems.firstIndex(of: fileItem) ?? 0
+                activeSheet = .viewer(items: imageItems, index: index)
+            } else {
+                activeSheet = .viewer(items: [fileItem], index: 0)
+            }
         }
     }
 
