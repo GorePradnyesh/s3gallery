@@ -1,5 +1,7 @@
 import XCTest
 
+// MARK: - Default args (no pre-downloaded file)
+
 final class FileActionFlowTests: XCTestCase {
     var app: XCUIApplication!
 
@@ -18,9 +20,7 @@ final class FileActionFlowTests: XCTestCase {
 
     private func navigateToBucket() {
         let bucket = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
-        if bucket.waitForExistence(timeout: 5) {
-            bucket.tap()
-        }
+        if bucket.waitForExistence(timeout: 5) { bucket.tap() }
     }
 
     private func findFile(named name: String) -> XCUIElement {
@@ -47,9 +47,7 @@ final class FileActionFlowTests: XCTestCase {
     }
 
     func testSelectButtonIsNotVisibleAtRoot() {
-        // At root (bucket list), there should be no Select button
         let selectButton = app.buttons["Select"]
-        // Wait for the bucket list to load
         let _ = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
             .waitForExistence(timeout: 5)
         XCTAssertFalse(selectButton.exists)
@@ -60,13 +58,10 @@ final class FileActionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Select"].waitForExistence(timeout: 5))
         app.buttons["Select"].tap()
 
-        // Tap a file to select it
         let file = findFile(named: "sunset.jpg")
-        if file.waitForExistence(timeout: 5) {
-            file.tap()
-            // The selection action bar should appear
-            XCTAssertTrue(app.otherElements["SelectionActionBar"].waitForExistence(timeout: 2))
-        }
+        XCTAssertTrue(file.waitForExistence(timeout: 5))
+        file.tap()
+        XCTAssertTrue(app.otherElements["SelectionActionBar"].waitForExistence(timeout: 2))
     }
 
     // MARK: - Context Menu
@@ -96,7 +91,6 @@ final class FileActionFlowTests: XCTestCase {
 
         file.press(forDuration: 1.2)
 
-        // Images show Save to Photos
         XCTAssertTrue(app.buttons["Save to Photos"].waitForExistence(timeout: 3))
     }
 
@@ -110,21 +104,40 @@ final class FileActionFlowTests: XCTestCase {
 
         file.press(forDuration: 1.2)
 
-        let selectInMenu = app.buttons["Select"]
+        let selectInMenu = app.buttons["context-menu-select"]
         XCTAssertTrue(selectInMenu.waitForExistence(timeout: 3))
         selectInMenu.tap()
 
-        // Should now be in selection mode (Done button visible)
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 2))
     }
+}
 
-    // MARK: - Share Sheet (requires --mock-file-action)
+// MARK: - File action sheets (--mock-file-action pre-downloads the file)
 
-    func testShareActionPresentsSheet() {
-        app.terminate()
+final class FileActionSheetFlowTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--mock-file-action"]
         app.launch()
+    }
 
+    override func tearDownWithError() throws {
+        app.terminate()
+    }
+
+    private func navigateToBucket() {
+        let bucket = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        if bucket.waitForExistence(timeout: 5) { bucket.tap() }
+    }
+
+    private func findFile(named name: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label CONTAINS[c] '\(name)'")).firstMatch
+    }
+
+    func testShareActionPresentsSheet() {
         navigateToBucket()
         let file = findFile(named: "sunset.jpg")
         guard file.waitForExistence(timeout: 5) else {
@@ -136,16 +149,11 @@ final class FileActionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Share"].waitForExistence(timeout: 3))
         app.buttons["Share"].tap()
 
-        // System share sheet appears — detect its close button
         let closeButton = app.buttons["Close"]
         XCTAssertTrue(closeButton.waitForExistence(timeout: 5))
     }
 
     func testOpenInActionPresentsSheet() {
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--mock-file-action"]
-        app.launch()
-
         navigateToBucket()
         let file = findFile(named: "sunset.jpg")
         guard file.waitForExistence(timeout: 5) else {
@@ -157,18 +165,11 @@ final class FileActionFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Open In"].waitForExistence(timeout: 3))
         app.buttons["Open In"].tap()
 
-        // Both Share and Open In use the same UIActivityViewController
         let closeButton = app.buttons["Close"]
         XCTAssertTrue(closeButton.waitForExistence(timeout: 5))
     }
 
-    // MARK: - Viewer Share Button
-
     func testViewerHasShareButton() {
-        app.terminate()
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--mock-file-action"]
-        app.launch()
-
         navigateToBucket()
         let file = findFile(named: "sunset.jpg")
         guard file.waitForExistence(timeout: 5) else {

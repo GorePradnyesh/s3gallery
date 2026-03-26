@@ -35,12 +35,14 @@ final class BrowseFlowTests: XCTestCase {
         bucketCell.tap()
 
         // Switch to list view
-        app.buttons["Switch to list view"].tap()
-        XCTAssertTrue(app.buttons["Switch to grid view"].exists)
+        let listViewButton = app.buttons["Switch to list view"]
+        XCTAssertTrue(listViewButton.waitForExistence(timeout: 5))
+        listViewButton.tap()
+        XCTAssertTrue(app.buttons["Switch to grid view"].waitForExistence(timeout: 3))
 
         // Switch back to grid view
         app.buttons["Switch to grid view"].tap()
-        XCTAssertTrue(app.buttons["Switch to list view"].exists)
+        XCTAssertTrue(app.buttons["Switch to list view"].waitForExistence(timeout: 3))
     }
 
     func testBreadcrumbNavigationPopsToParent() {

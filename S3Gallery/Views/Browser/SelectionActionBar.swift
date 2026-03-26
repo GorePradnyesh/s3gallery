@@ -27,6 +27,7 @@ struct SelectionActionBar: View {
             .background(.bar)
         }
         .disabled(selectedCount == 0)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("SelectionActionBar")
     }
 

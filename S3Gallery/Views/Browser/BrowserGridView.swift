@@ -67,7 +67,7 @@ struct BrowserGridView: View {
         } label: {
             Label("Select", systemImage: "checkmark.circle")
         }
-        .accessibilityIdentifier("Select")
+        .accessibilityIdentifier("context-menu-select")
     }
 }
 
@@ -121,7 +121,7 @@ private struct GridCell: View {
         .clipShape(Rectangle())
         .task { await loadThumbnail() }
         .accessibilityLabel(item.name)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 
     private func loadThumbnail() async {

@@ -67,7 +67,7 @@ struct BrowserListView: View {
         } label: {
             Label("Select", systemImage: "checkmark.circle")
         }
-        .accessibilityIdentifier("Select")
+        .accessibilityIdentifier("context-menu-select")
     }
 
     private func loadThumbnail(for item: S3Item) async {

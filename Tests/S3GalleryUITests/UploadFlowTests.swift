@@ -1,5 +1,7 @@
 import XCTest
 
+// MARK: - Default (writable bucket, no auto-selection)
+
 final class UploadFlowTests: XCTestCase {
     var app: XCUIApplication!
 
@@ -14,32 +16,15 @@ final class UploadFlowTests: XCTestCase {
         app.terminate()
     }
 
-    // MARK: - Toolbar state
-
     func testUploadButtonAppearsForWritableBucket() {
         navigateToTestBucket()
         let uploadButton = app.buttons["Upload file"]
         XCTAssertTrue(uploadButton.waitForExistence(timeout: 5))
     }
 
-    func testReadOnlyBucketShowsLockIcon() {
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--mock-read-only"]
-        app.terminate()
-        app.launch()
-
-        navigateToTestBucket()
-        let lockIcon = app.buttons["Read only bucket"]
-        XCTAssertTrue(lockIcon.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["Upload file"].exists)
-    }
-
-    // MARK: - Sheet presentation
-
     func testUploadSheetOpensOnTapOfUploadButton() {
         navigateToTestBucket()
-        let uploadButton = app.buttons["Upload file"]
-        XCTAssertTrue(uploadButton.waitForExistence(timeout: 5))
-        uploadButton.tap()
+        openUploadSheet()
 
         XCTAssertTrue(app.buttons["Photo Library"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Files"].exists)
@@ -47,9 +32,7 @@ final class UploadFlowTests: XCTestCase {
 
     func testUploadSheetCancelDismissesSheet() {
         navigateToTestBucket()
-        let uploadButton = app.buttons["Upload file"]
-        XCTAssertTrue(uploadButton.waitForExistence(timeout: 5))
-        uploadButton.tap()
+        openUploadSheet()
 
         XCTAssertTrue(app.buttons["Photo Library"].waitForExistence(timeout: 3))
         app.buttons["Cancel"].tap()
@@ -58,10 +41,60 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertFalse(app.buttons["Photo Library"].exists)
     }
 
-    // MARK: - Staging screen
+    private func navigateToTestBucket() {
+        let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        if bucketCell.waitForExistence(timeout: 5) { bucketCell.tap() }
+    }
+
+    private func openUploadSheet() {
+        let uploadButton = app.buttons["Upload file"]
+        if uploadButton.waitForExistence(timeout: 5) { uploadButton.tap() }
+    }
+}
+
+// MARK: - Read-only bucket
+
+final class UploadReadOnlyFlowTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--mock-read-only"]
+        app.launch()
+    }
+
+    override func tearDownWithError() throws {
+        app.terminate()
+    }
+
+    func testReadOnlyBucketShowsLockIcon() {
+        let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        if bucketCell.waitForExistence(timeout: 5) { bucketCell.tap() }
+
+        let lockIcon = app.buttons["Read only bucket"]
+        XCTAssertTrue(lockIcon.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Upload file"].exists)
+    }
+}
+
+// MARK: - Staging screen (--auto-stage pre-selects files)
+
+final class UploadStagingFlowTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-stage"]
+        app.launch()
+    }
+
+    override func tearDownWithError() throws {
+        app.terminate()
+    }
 
     func testStagingScreenShowsSelectedFiles() {
-        launchWithAutoStage()
         navigateToTestBucket()
         openUploadSheet()
 
@@ -70,17 +103,14 @@ final class UploadFlowTests: XCTestCase {
     }
 
     func testStagingScreenShowsUploadButton() {
-        launchWithAutoStage()
         navigateToTestBucket()
         openUploadSheet()
 
-        // "Upload 2 Files" button should appear
         let uploadBtn = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Upload'")).element(boundBy: 0)
         XCTAssertTrue(uploadBtn.waitForExistence(timeout: 3))
     }
 
     func testStagingCancelDismissesSheet() {
-        launchWithAutoStage()
         navigateToTestBucket()
         openUploadSheet()
 
@@ -90,10 +120,34 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["test-bucket"].waitForExistence(timeout: 3))
     }
 
-    // MARK: - Success flow (auto-upload)
+    private func navigateToTestBucket() {
+        let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        if bucketCell.waitForExistence(timeout: 5) { bucketCell.tap() }
+    }
+
+    private func openUploadSheet() {
+        let uploadButton = app.buttons["Upload file"]
+        if uploadButton.waitForExistence(timeout: 5) { uploadButton.tap() }
+    }
+}
+
+// MARK: - Success flow (--auto-upload triggers upload immediately)
+
+final class UploadSuccessFlowTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-upload"]
+        app.launch()
+    }
+
+    override func tearDownWithError() throws {
+        app.terminate()
+    }
 
     func testUploadSuccessShowsCompletionBanner() {
-        launchWithAutoUpload()
         navigateToTestBucket()
         openUploadSheet()
 
@@ -103,7 +157,6 @@ final class UploadFlowTests: XCTestCase {
     }
 
     func testUploadSuccessDoneButtonDismissesSheet() {
-        launchWithAutoUpload()
         navigateToTestBucket()
         openUploadSheet()
 
@@ -114,29 +167,44 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertFalse(app.buttons["Done"].exists)
     }
 
-    // MARK: - Failure flow (auto-upload + upload failure)
+    private func navigateToTestBucket() {
+        let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        if bucketCell.waitForExistence(timeout: 5) { bucketCell.tap() }
+    }
 
-    func testUploadFailureShowsFailedSection() {
+    private func openUploadSheet() {
+        let uploadButton = app.buttons["Upload file"]
+        if uploadButton.waitForExistence(timeout: 5) { uploadButton.tap() }
+    }
+}
+
+// MARK: - Failure flow (--auto-upload + --mock-upload-failure)
+
+final class UploadFailureFlowTests: XCTestCase {
+    var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
         app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login",
                                "--auto-upload", "--mock-upload-failure"]
-        app.terminate()
         app.launch()
+    }
 
+    override func tearDownWithError() throws {
+        app.terminate()
+    }
+
+    func testUploadFailureShowsFailedSection() {
         navigateToTestBucket()
         openUploadSheet()
 
-        // Summary shows "0 of 1 uploaded"
         let summary = app.staticTexts["0 of 1 uploaded"]
         XCTAssertTrue(summary.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["Done"].exists)
     }
 
     func testUploadFailureDoneButtonDismissesSheet() {
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login",
-                               "--auto-upload", "--mock-upload-failure"]
-        app.terminate()
-        app.launch()
-
         navigateToTestBucket()
         openUploadSheet()
 
@@ -147,31 +215,13 @@ final class UploadFlowTests: XCTestCase {
         XCTAssertFalse(app.buttons["Done"].exists)
     }
 
-    // MARK: - Helpers
-
     private func navigateToTestBucket() {
         let bucketCell = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
-        if bucketCell.waitForExistence(timeout: 5) {
-            bucketCell.tap()
-        }
+        if bucketCell.waitForExistence(timeout: 5) { bucketCell.tap() }
     }
 
     private func openUploadSheet() {
         let uploadButton = app.buttons["Upload file"]
-        if uploadButton.waitForExistence(timeout: 5) {
-            uploadButton.tap()
-        }
-    }
-
-    private func launchWithAutoUpload() {
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-upload"]
-        app.terminate()
-        app.launch()
-    }
-
-    private func launchWithAutoStage() {
-        app.launchArguments = ["--uitesting", "--mock-s3-success", "--skip-login", "--auto-stage"]
-        app.terminate()
-        app.launch()
+        if uploadButton.waitForExistence(timeout: 5) { uploadButton.tap() }
     }
 }
