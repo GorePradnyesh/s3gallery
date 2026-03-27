@@ -94,23 +94,35 @@ struct BrowserView: View {
             case .error(let msg):
                 errorView(message: msg, retry: { Task { await viewModel.loadBuckets() } })
             default:
-                List(viewModel.buckets, id: \.self) { bucket in
-                    Button {
+                bucketGrid
+            }
+        }
+    }
+
+    private var bucketGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: bucketGridColumns, spacing: 12) {
+                ForEach(viewModel.buckets, id: \.self) { bucket in
+                    BucketTile(name: bucket) {
                         Task { await viewModel.enterBucket(bucket) }
-                    } label: {
-                        Label(bucket, systemImage: "externaldrive.fill")
-                    }
-                    .buttonStyle(.plain)
-                }
-                .listStyle(.plain)
-                .refreshable { await viewModel.loadBuckets() }
-                .overlay {
-                    if viewModel.loadState == .loaded && viewModel.buckets.isEmpty {
-                        ContentUnavailableView("No Buckets", systemImage: "externaldrive", description: Text("No S3 buckets found for this account."))
                     }
                 }
             }
+            .padding(16)
         }
+        .refreshable { await viewModel.loadBuckets() }
+        .overlay {
+            if viewModel.loadState == .loaded && viewModel.buckets.isEmpty {
+                ContentUnavailableView("No Buckets", systemImage: "externaldrive", description: Text("No S3 buckets found for this account."))
+            }
+        }
+    }
+
+    private var bucketGridColumns: [GridItem] {
+        let isPortrait = horizontalSizeClass == .compact && verticalSizeClass == .regular
+        return isPortrait
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
     }
 
     private var folderContentView: some View {
@@ -383,5 +395,62 @@ struct BrowserView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+// MARK: - Bucket tile
+
+private struct BucketTile: View {
+    let name: String
+    let onTap: () -> Void
+
+    private static let gradientPairs: [(Color, Color)] = [
+        (Color(hue: 0.58, saturation: 0.75, brightness: 0.90),
+         Color(hue: 0.47, saturation: 0.65, brightness: 0.82)), // blue → teal
+        (Color(hue: 0.78, saturation: 0.70, brightness: 0.82),
+         Color(hue: 0.90, saturation: 0.65, brightness: 0.78)), // purple → pink
+        (Color(hue: 0.10, saturation: 0.80, brightness: 0.95),
+         Color(hue: 0.03, saturation: 0.82, brightness: 0.88)), // orange → red
+        (Color(hue: 0.48, saturation: 0.68, brightness: 0.80),
+         Color(hue: 0.37, saturation: 0.62, brightness: 0.75)), // teal → green
+        (Color(hue: 0.65, saturation: 0.72, brightness: 0.82),
+         Color(hue: 0.78, saturation: 0.68, brightness: 0.78)), // indigo → purple
+        (Color(hue: 0.94, saturation: 0.72, brightness: 0.88),
+         Color(hue: 0.08, saturation: 0.80, brightness: 0.95)), // pink → amber
+    ]
+
+    private var gradientColors: (Color, Color) {
+        let index = abs(name.hashValue) % Self.gradientPairs.count
+        return Self.gradientPairs[index]
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                let (c1, c2) = gradientColors
+                LinearGradient(
+                    colors: [c1.opacity(0.6), c2.opacity(0.6)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                HStack(spacing: 10) {
+                    Image(systemName: "externaldrive.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .shadow(radius: 2)
+                    Text(name)
+                        .font(.callout.bold())
+                        .foregroundStyle(.white)
+                        .shadow(radius: 1)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                }
+                .padding(.horizontal, 16)
+            }
+            .aspectRatio(8 / 3, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .black.opacity(0.25), radius: 4, y: 2)
+        }
+        .buttonStyle(.plain)
     }
 }

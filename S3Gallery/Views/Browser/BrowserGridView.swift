@@ -168,27 +168,95 @@ private struct GridCell: View {
     @State private var thumbnail: UIImage?
     @State private var isLoading = false
 
+    // Palette of two-tone complementary gradient pairs (top-leading → bottom-trailing)
+    private static let gradientPairs: [(Color, Color)] = [
+        (Color(hue: 0.58, saturation: 0.75, brightness: 0.90),
+         Color(hue: 0.47, saturation: 0.65, brightness: 0.82)), // blue → teal
+        (Color(hue: 0.78, saturation: 0.70, brightness: 0.82),
+         Color(hue: 0.90, saturation: 0.65, brightness: 0.78)), // purple → pink
+        (Color(hue: 0.10, saturation: 0.80, brightness: 0.95),
+         Color(hue: 0.03, saturation: 0.82, brightness: 0.88)), // orange → red
+        (Color(hue: 0.48, saturation: 0.68, brightness: 0.80),
+         Color(hue: 0.37, saturation: 0.62, brightness: 0.75)), // teal → green
+        (Color(hue: 0.65, saturation: 0.72, brightness: 0.82),
+         Color(hue: 0.78, saturation: 0.68, brightness: 0.78)), // indigo → purple
+        (Color(hue: 0.94, saturation: 0.72, brightness: 0.88),
+         Color(hue: 0.08, saturation: 0.80, brightness: 0.95)), // pink → amber
+    ]
+
+    private var tileGradientColors: (Color, Color) {
+        switch item {
+        case .folder:
+            return Self.gradientPairs[0] // blue → teal
+        case .file(let f):
+            switch FileTypeDetector.category(for: f) {
+            case .image:  return Self.gradientPairs[4] // indigo → purple
+            case .video:  return Self.gradientPairs[1] // purple → pink
+            case .audio:  return Self.gradientPairs[2] // orange → red
+            case .pdf:    return Self.gradientPairs[5] // pink → amber
+            case .other:
+                return (Color(hue: 0.60, saturation: 0.15, brightness: 0.45),
+                        Color(hue: 0.60, saturation: 0.10, brightness: 0.38))
+            }
+        }
+    }
+
+    private var tileLinearGradient: LinearGradient {
+        let (c1, c2) = tileGradientColors
+        return LinearGradient(colors: [c1.opacity(0.6), c2.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    private var fileExtension: String {
+        guard case .file(let f) = item else { return "" }
+        return URL(fileURLWithPath: f.name).pathExtension.uppercased()
+    }
+
     var body: some View {
         ZStack {
-            Color(.secondarySystemBackground)
             if let thumb = thumbnail {
+                Color(.secondarySystemBackground)
                 Image(uiImage: thumb)
                     .resizable()
                     .scaledToFit()
             } else {
-                VStack(spacing: 4) {
-                    if isLoading {
-                        ProgressView()
-                    } else {
-                        Image(systemName: item.systemImageName)
-                            .font(.title2)
-                            .foregroundStyle(item.iconColor)
+                tileLinearGradient
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                } else if case .folder = item {
+                    VStack(spacing: 6) {
+                        Image(systemName: "folder.fill")
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .shadow(radius: 2)
+                        Text(item.name)
+                            .font(.caption2.bold())
+                            .foregroundStyle(.white)
+                            .shadow(radius: 1)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 4)
                     }
-                    Text(item.name)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .padding(.horizontal, 4)
+                } else {
+                    let ext = fileExtension
+                    VStack(spacing: 4) {
+                        if ext.isEmpty {
+                            Image(systemName: item.systemImageName)
+                                .font(.title2)
+                                .foregroundStyle(.white)
+                                .shadow(radius: 2)
+                        } else {
+                            Text(ext)
+                                .font(.system(size: 18, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+                                .shadow(radius: 2)
+                        }
+                        Text(item.name)
+                            .font(.caption2)
+                            .foregroundStyle(.white.opacity(0.9))
+                            .lineLimit(1)
+                            .padding(.horizontal, 4)
+                    }
                 }
             }
 
