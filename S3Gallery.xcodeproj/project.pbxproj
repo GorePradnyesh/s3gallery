@@ -59,7 +59,8 @@
 		381A41F7B7AD4A43A7B029C3 /* FileActionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D1E1D44E5BB4460B7115F7C /* FileActionServiceTests.swift */; };
 		CEAB4C34175247C5BDFA9192 /* BrowserViewModelSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB07CC2CC24469983B70445 /* BrowserViewModelSelectionTests.swift */; };
 		B05A426391D84B2BAF228884 /* FileActionFlowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F0405175014770AF1296F8 /* FileActionFlowTests.swift */; };
-/* End PBXBuildFile section */
+		FCCCF295E3FC4919868F18D1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C703CF53D14149C193D9B243 /* Assets.xcassets */; };
+		/* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		3845BF37E0C9D9428E3781DB /* PBXContainerItemProxy */ = {
@@ -142,7 +143,8 @@
 		5D1E1D44E5BB4460B7115F7C /* FileActionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActionServiceTests.swift; sourceTree = "<group>"; };
 		7EB07CC2CC24469983B70445 /* BrowserViewModelSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserViewModelSelectionTests.swift; sourceTree = "<group>"; };
 		A3F0405175014770AF1296F8 /* FileActionFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActionFlowTests.swift; sourceTree = "<group>"; };
-/* End PBXFileReference section */
+		C703CF53D14149C193D9B243 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		CCFEEAD349FC3EB6F3C1E652 /* Frameworks */ = {
@@ -167,7 +169,8 @@
 				54A20CE6889E61B70FDB2520 /* Views */,
 				05D44367D1596FFC2107C4DD /* Info.plist */,
 				6E69FEB4E396A09AC90487DA /* S3GalleryApp.swift */,
-			);
+			
+				C703CF53D14149C193D9B243 /* Assets.xcassets */,);
 			path = S3Gallery;
 			sourceTree = "<group>";
 		};
@@ -401,6 +404,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = EA312C8BA8B0199886EF3462 /* Build configuration list for PBXNativeTarget "S3Gallery" */;
 			buildPhases = (
+				D1A98ECCD3964B29B43D3B05 /* Resources */,
 				30B35A83D81C5ECCFFD60DFA /* Sources */,
 				CCFEEAD349FC3EB6F3C1E652 /* Frameworks */,
 			);
@@ -476,6 +480,17 @@
 		};
 /* End PBXProject section */
 
+
+/* Begin PBXResourcesBuildPhase section */
+		D1A98ECCD3964B29B43D3B05 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCCCF295E3FC4919868F18D1 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 /* Begin PBXSourcesBuildPhase section */
 		30B35A83D81C5ECCFFD60DFA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
