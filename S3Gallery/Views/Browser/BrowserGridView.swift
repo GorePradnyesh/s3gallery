@@ -13,29 +13,29 @@ struct BrowserGridView: View {
     let onSelectItem: (S3Item) -> Void
     let onAction: (S3FileItem, FileAction) -> Void
 
-    private var gridColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: 2), count: columnCount)
-    }
-
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: gridColumns, spacing: 2) {
-                ForEach(items) { item in
-                    GridCell(
-                        item: item,
-                        s3Service: s3Service,
-                        isSelected: isSelected(item)
-                    )
-                    .onTapGesture {
-                        if viewModel.isSelectionMode, case .file(let fi) = item {
-                            viewModel.toggleSelection(fi)
-                        } else {
-                            onSelectItem(item)
-                        }
-                    }
-                    .contextMenu {
-                        if case .file(let fi) = item {
-                            fileContextMenu(for: fi)
+            HStack(alignment: .top, spacing: 2) {
+                ForEach(0..<columnCount, id: \.self) { col in
+                    LazyVStack(spacing: 2) {
+                        ForEach(items(forColumn: col)) { item in
+                            GridCell(
+                                item: item,
+                                s3Service: s3Service,
+                                isSelected: isSelected(item)
+                            )
+                            .onTapGesture {
+                                if viewModel.isSelectionMode, case .file(let fi) = item {
+                                    viewModel.toggleSelection(fi)
+                                } else {
+                                    onSelectItem(item)
+                                }
+                            }
+                            .contextMenu {
+                                if case .file(let fi) = item {
+                                    fileContextMenu(for: fi)
+                                }
+                            }
                         }
                     }
                 }
@@ -47,6 +47,12 @@ struct BrowserGridView: View {
         }
         .accessibilityIdentifier("grid-scroll-view")
         .accessibilityValue("\(columnCount)")
+    }
+
+    private func items(forColumn col: Int) -> [S3Item] {
+        items.enumerated()
+            .filter { $0.offset % columnCount == col }
+            .map { $0.element }
     }
 
     private func isSelected(_ item: S3Item) -> Bool {
@@ -166,6 +172,7 @@ private struct GridCell: View {
     var isSelected: Bool = false
 
     @State private var thumbnail: UIImage?
+    @State private var imageAspectRatio: CGFloat = 1.0
     @State private var isLoading = false
 
     // 12-pair palette — each pair has a large hue shift (≥0.13) and high saturation
@@ -229,7 +236,6 @@ private struct GridCell: View {
     var body: some View {
         ZStack {
             if let thumb = thumbnail {
-                Color(.secondarySystemBackground)
                 Image(uiImage: thumb)
                     .resizable()
                     .scaledToFit()
@@ -289,7 +295,7 @@ private struct GridCell: View {
                 }
             }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .aspectRatio(imageAspectRatio, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .task { await loadThumbnail() }
         .accessibilityLabel(item.name)
@@ -305,6 +311,7 @@ private struct GridCell: View {
         let thumbKey = cacheKey + "?thumb"
 
         if let cached = CacheService.shared.thumbnail(forKey: thumbKey) {
+            imageAspectRatio = cached.size.width / cached.size.height
             thumbnail = cached
             return
         }
@@ -325,6 +332,7 @@ private struct GridCell: View {
             // Scale to 1/4 resolution (half each dimension), capped at HD
             let thumb = await full.thumbnailScaled(to: full.quarterResolutionSize)
             CacheService.shared.storeThumbnail(thumb, forKey: thumbKey)
+            imageAspectRatio = full.size.width / full.size.height
             thumbnail = thumb
         } catch {
             // Fall through to placeholder icon
