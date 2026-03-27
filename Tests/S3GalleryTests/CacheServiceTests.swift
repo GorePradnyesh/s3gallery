@@ -134,4 +134,82 @@ struct CacheServiceTests {
         #expect(cache.diskUsageBytes >= initialUsage)
         cache.clearAll()
     }
+
+    // MARK: - Full-resolution caching
+
+    /// Verifies that full-resolution data stored via `storeFullResData` is retrievable.
+    ///
+    /// PhotoViewer calls `fullResData(forKey:)` on open to avoid re-downloading an image that
+    /// was already fetched during grid browsing. This test confirms the round-trip write/read
+    /// works correctly so the viewer can present the cached image without an S3 request.
+    @Test("stores and retrieves full-res data")
+    func storeAndRetrieveFullResData() {
+        let cache = makeCache()
+        let data = makeImage().jpegData(compressionQuality: 0.9)!
+        cache.storeFullResData(data, forKey: "bucket/photo.jpg")
+
+        let retrieved = cache.fullResData(forKey: "bucket/photo.jpg")
+        #expect(retrieved != nil)
+        #expect(retrieved == data)
+        cache.clearAll()
+    }
+
+    /// Verifies that `fullResData` returns nil for a key that was never stored.
+    ///
+    /// PhotoViewer checks the full-res cache before deciding whether to download. A false
+    /// cache hit would cause PhotoViewer to display corrupt data or crash on `UIImage(data:)`.
+    @Test("fullResData returns nil for unknown key")
+    func fullResDataMissingKeyReturnsNil() {
+        let cache = makeCache()
+        #expect(cache.fullResData(forKey: "bucket/missing.jpg") == nil)
+    }
+
+    /// Verifies that `clearAll` also removes full-resolution cached files.
+    ///
+    /// Logout clears all cached content — full-res images must be included. If full-res entries
+    /// survived `clearAll`, user content would persist on the device after logout.
+    @Test("clearAll removes full-res cached data")
+    func clearAllRemovesFullResData() {
+        let cache = makeCache()
+        let data = makeImage().jpegData(compressionQuality: 0.9)!
+        cache.storeFullResData(data, forKey: "bucket/photo.jpg")
+
+        cache.clearAll()
+
+        #expect(cache.fullResData(forKey: "bucket/photo.jpg") == nil)
+        #expect(cache.diskUsageBytes == 0)
+    }
+
+    /// Verifies that `cacheFullResolution` change publishes `objectWillChange`.
+    ///
+    /// SettingsView binds the toggle to `cacheFullResolution`. If the property is not
+    /// `@Published`, the toggle will not reflect the stored state after the view reloads.
+    @Test("cacheFullResolution change publishes objectWillChange")
+    func cacheFullResolutionPublishesChange() async {
+        let cache = makeCache()
+        var changeCount = 0
+        let cancellable = cache.objectWillChange.sink { changeCount += 1 }
+
+        cache.cacheFullResolution = true
+        cache.cacheFullResolution = false
+
+        #expect(changeCount == 2)
+        _ = cancellable
+    }
+
+    /// Verifies that `cacheFullResolution` is persisted to UserDefaults.
+    ///
+    /// The setting must survive app restarts. If the `didSet` observer is absent, the user's
+    /// choice is forgotten on relaunch and the setting always reverts to the default (false).
+    @Test("cacheFullResolution persists to UserDefaults")
+    func cacheFullResolutionPersistsToUserDefaults() {
+        let cache = makeCache()
+        cache.cacheFullResolution = true
+
+        let stored = UserDefaults.standard.bool(forKey: "cacheFullResolution")
+        #expect(stored == true)
+
+        // Restore to avoid polluting other tests
+        cache.cacheFullResolution = false
+    }
 }

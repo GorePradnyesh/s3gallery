@@ -1,31 +1,92 @@
 import SwiftUI
 
 struct PhotoViewer: View {
-    let url: URL
+    let item: S3FileItem
+    let presignedURL: URL
     let fileName: String
 
     @State private var scale: CGFloat = 1
     @State private var lastScale: CGFloat = 1
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var displayImage: UIImage?
+    @State private var isLoadingFullRes = false
+    @State private var loadFailed = false
 
     var body: some View {
         GeometryReader { geo in
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    photoContent(image: image, geo: geo)
-                case .failure:
-                    ContentUnavailableView("Failed to Load", systemImage: "photo.badge.exclamationmark", description: Text("Could not load the image."))
-                default:
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+            if loadFailed && displayImage == nil {
+                ContentUnavailableView(
+                    "Failed to Load",
+                    systemImage: "photo.badge.exclamationmark",
+                    description: Text("Could not load the image.")
+                )
+            } else if let img = displayImage {
+                photoContent(image: Image(uiImage: img), geo: geo)
+                    .overlay(alignment: .bottomTrailing) {
+                        if isLoadingFullRes {
+                            ProgressView()
+                                .padding(8)
+                                .background(.ultraThinMaterial, in: Circle())
+                                .padding(12)
+                        }
+                    }
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .background(Color.black)
         .ignoresSafeArea(edges: .bottom)
+        .task { await loadImage() }
     }
+
+    // MARK: - Image loading
+
+    private func loadImage() async {
+        let cacheKey = "\(item.bucket)/\(item.key)"
+
+        // 1. Full-res already cached — show immediately, no download needed
+        if let data = CacheService.shared.fullResData(forKey: cacheKey),
+           let image = UIImage(data: data) {
+            displayImage = image
+            return
+        }
+
+        // 2. Show thumbnail as placeholder while full-res loads
+        let thumbKey = cacheKey + "?thumb"
+        if let thumb = CacheService.shared.thumbnail(forKey: thumbKey) {
+            displayImage = thumb
+            isLoadingFullRes = true
+        }
+
+        // 3. Debounce: wait before hitting S3 so rapid carousel swipes don't fire many requests.
+        //    The .task modifier cancels this task when the view disappears, so the sleep throws
+        //    CancellationError and we return without making a network call.
+        try? await Task.sleep(for: .milliseconds(500))
+        guard !Task.isCancelled else { return }
+
+        // 4. Download full-res from presigned URL
+        do {
+            let (data, _) = try await URLSession.shared.data(from: presignedURL)
+
+            if CacheService.shared.cacheFullResolution {
+                CacheService.shared.storeFullResData(data, forKey: cacheKey)
+            }
+
+            if let image = UIImage(data: data) {
+                displayImage = image
+            }
+        } catch {
+            if displayImage == nil {
+                loadFailed = true
+            }
+        }
+
+        isLoadingFullRes = false
+    }
+
+    // MARK: - Gesture interaction
 
     @ViewBuilder
     private func photoContent(image: Image, geo: GeometryProxy) -> some View {

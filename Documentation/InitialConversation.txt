@@ -63,9 +63,10 @@ Make the AWS regions a drop down instead of a text field.
 (COMPLETED)
 ---- 
 Feature Requet #8
-Cache 1/4 rez 
-
+For creating thumbnails and caching photos please use a default of 1/4 resolution or HD. This should be configurable in the settings to allow cachine of full resolution images.
+Additionally when prevewing images please use the cached image if full res is available, no need to redownload it (reduce S3 costs of network transfer). use the decimated res image while the full res image is being downloaded. Once full res is downloaded replace it in the preview pane.
 -----
 Feature Reqest #9
 When in preview mode, enable right and left swipe to navigate to adjacent photos.
+(COMPLETED)
 

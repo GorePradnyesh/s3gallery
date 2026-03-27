@@ -101,7 +101,7 @@ struct ViewerContainer: View {
     private func viewerForCategory(url: URL) -> some View {
         switch viewModel.fileCategory {
         case .image:
-            PhotoViewer(url: url, fileName: viewModel.fileName)
+            PhotoViewer(item: item, presignedURL: url, fileName: viewModel.fileName)
         case .video:
             VideoPlayerView(url: url, fileName: viewModel.fileName)
         case .pdf:

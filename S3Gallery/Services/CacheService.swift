@@ -6,8 +6,10 @@ final class CacheService: ObservableObject {
     static let shared = CacheService()
 
     /// Creates an isolated instance for unit tests using a unique temp directory.
-    static func makeTestInstance(maxDiskSizeMB: Int = 50) -> CacheService {
-        CacheService(maxDiskSizeMB: maxDiskSizeMB, directoryName: "S3GalleryThumbnailsTest_\(UUID().uuidString)")
+    static func makeTestInstance(maxDiskSizeMB: Int = 50, cacheFullResolution: Bool = false) -> CacheService {
+        let instance = CacheService(maxDiskSizeMB: maxDiskSizeMB, directoryName: "S3GalleryThumbnailsTest_\(UUID().uuidString)")
+        instance.cacheFullResolution = cacheFullResolution
+        return instance
     }
 
     @Published private(set) var diskUsageBytes: Int64 = 0
@@ -23,12 +25,19 @@ final class CacheService: ObservableObject {
         }
     }
 
+    @Published var cacheFullResolution: Bool {
+        didSet {
+            UserDefaults.standard.set(cacheFullResolution, forKey: "cacheFullResolution")
+        }
+    }
+
     var maxDiskSizeBytes: Int64 { Int64(maxDiskSizeMB) * 1_000_000 }
 
     private init(maxDiskSizeMB: Int? = nil, directoryName: String = "S3GalleryThumbnails") {
         self.maxDiskSizeMB = maxDiskSizeMB
             ?? UserDefaults.standard.integer(forKey: "cacheMaxDiskSizeMB").nonZero
             ?? 200
+        self.cacheFullResolution = UserDefaults.standard.bool(forKey: "cacheFullResolution")
 
         let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         cacheDirectory = caches.appending(path: directoryName, directoryHint: .isDirectory)
@@ -75,6 +84,26 @@ final class CacheService: ObservableObject {
         )
         try? data.write(to: fileURL, options: .atomic)
 
+        Task { await refreshDiskUsage() }
+        Task { await evictIfNeeded() }
+    }
+
+    /// Returns cached full-resolution image data for `key`, or nil if not cached.
+    func fullResData(forKey key: String) -> Data? {
+        let fileURL = diskURL(for: key + "?fullres")
+        guard fileManager.fileExists(atPath: fileURL.path) else { return nil }
+        try? fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: fileURL.path)
+        return try? Data(contentsOf: fileURL)
+    }
+
+    /// Persists raw image data as a full-resolution cache entry for `key`.
+    func storeFullResData(_ data: Data, forKey key: String) {
+        let fileURL = diskURL(for: key + "?fullres")
+        try? fileManager.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try? data.write(to: fileURL, options: .atomic)
         Task { await refreshDiskUsage() }
         Task { await evictIfNeeded() }
     }

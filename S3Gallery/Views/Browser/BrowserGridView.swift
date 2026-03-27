@@ -218,9 +218,10 @@ private struct GridCell: View {
               FileTypeDetector.category(for: fileItem) == .image
         else { return }
 
-        let cacheKey = "\(fileItem.bucket)/\(fileItem.key)?thumb"
+        let cacheKey = "\(fileItem.bucket)/\(fileItem.key)"
+        let thumbKey = cacheKey + "?thumb"
 
-        if let cached = CacheService.shared.thumbnail(forKey: cacheKey) {
+        if let cached = CacheService.shared.thumbnail(forKey: thumbKey) {
             thumbnail = cached
             return
         }
@@ -232,8 +233,15 @@ private struct GridCell: View {
             let url = try await s3Service.presignedURL(for: fileItem, ttl: 900)
             let (data, _) = try await URLSession.shared.data(from: url)
             guard let full = UIImage(data: data) else { return }
-            let thumb = await full.thumbnailScaled(to: CGSize(width: 300, height: 300))
-            CacheService.shared.storeThumbnail(thumb, forKey: cacheKey)
+
+            // Store full-res data if the setting is enabled
+            if CacheService.shared.cacheFullResolution {
+                CacheService.shared.storeFullResData(data, forKey: cacheKey)
+            }
+
+            // Scale to 1/4 resolution (half each dimension), capped at HD
+            let thumb = await full.thumbnailScaled(to: full.quarterResolutionSize)
+            CacheService.shared.storeThumbnail(thumb, forKey: thumbKey)
             thumbnail = thumb
         } catch {
             // Fall through to placeholder icon
@@ -244,6 +252,15 @@ private struct GridCell: View {
 // MARK: - UIImage thumbnail helper
 
 private extension UIImage {
+    /// 1/4 of the original pixel count (half each dimension), capped at HD (1920×1080).
+    var quarterResolutionSize: CGSize {
+        let quarter = CGSize(width: size.width / 2, height: size.height / 2)
+        let hdCap = CGSize(width: 1920, height: 1080)
+        let capScale = min(hdCap.width / quarter.width, hdCap.height / quarter.height)
+        guard capScale < 1 else { return quarter }
+        return CGSize(width: (quarter.width * capScale).rounded(), height: (quarter.height * capScale).rounded())
+    }
+
     func thumbnailScaled(to maxSize: CGSize) async -> UIImage {
         await withCheckedContinuation { continuation in
             Task.detached(priority: .utility) {

@@ -31,7 +31,7 @@ struct SettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will remove all cached thumbnails.")
+            Text("This will remove all cached images.")
         }
         .confirmationDialog(
             "Logout?",
@@ -56,7 +56,7 @@ struct SettingsView: View {
     }
 
     private var cacheSection: some View {
-        Section("Thumbnail Cache") {
+        Section("Image Cache") {
             LabeledContent("Disk Usage") {
                 Text(formattedUsage)
                     .foregroundStyle(.secondary)
@@ -74,6 +74,18 @@ struct SettingsView: View {
                     step: 50
                 )
                 .accessibilityLabel("Max cache size in megabytes")
+            }
+
+            Toggle(isOn: Binding(
+                get: { cacheService.cacheFullResolution },
+                set: { cacheService.cacheFullResolution = $0 }
+            )) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Cache Full Resolution Images")
+                    Text("Eliminates repeat S3 downloads for viewed photos")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Button("Clear Cache") {
