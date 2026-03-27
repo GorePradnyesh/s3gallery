@@ -46,6 +46,8 @@ final class UITestMockS3Service: S3ServiceProtocol {
                                  lastModified: Date(), eTag: nil)),
                 .file(S3FileItem(key: "sunset.jpg", bucket: bucket, size: 2_048_000,
                                  lastModified: Date(), eTag: nil)),
+                .file(S3FileItem(key: "sample.mp4", bucket: bucket, size: 512_000,
+                                 lastModified: Date(), eTag: nil)),
             ]
         }
         return [

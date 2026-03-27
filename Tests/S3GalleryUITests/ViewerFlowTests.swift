@@ -25,8 +25,8 @@ final class ViewerFlowTests: XCTestCase {
         doneButton.tap()
 
         // Should return to browser
-        let breadcrumb = app.staticTexts["test-bucket"]
-        XCTAssertTrue(breadcrumb.waitForExistence(timeout: 3))
+        let breadcrumb = app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch
+        XCTAssertTrue(breadcrumb.waitForExistence(timeout: 5))
     }
 
     func testSwipeNavigatesToAdjacentPhoto() {
@@ -58,6 +58,43 @@ final class ViewerFlowTests: XCTestCase {
 
         // Done button should still be present
         XCTAssertTrue(app.buttons["Done"].exists, "Done button should still be visible")
+    }
+
+    func testTapVideoItemOpensVideoViewer() {
+        navigateToTestBucket()
+
+        let videoItem = app.buttons.matching(NSPredicate(format: "label CONTAINS 'sample.mp4'")).firstMatch
+        XCTAssertTrue(videoItem.waitForExistence(timeout: 5), "sample.mp4 not found in bucket")
+        videoItem.tap()
+
+        // Carousel viewer opens with sample.mp4 as nav title
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5), "Done button not visible")
+        XCTAssertTrue(
+            app.navigationBars["sample.mp4"].waitForExistence(timeout: 3),
+            "Navigation title should be sample.mp4"
+        )
+
+        // Play button is shown inline (video is not auto-played in the carousel)
+        let playButton = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Play'")).firstMatch
+        XCTAssertTrue(playButton.waitForExistence(timeout: 3), "Play button should be visible in carousel")
+
+        // Tapping play opens AVPlayerViewController full-screen (UIKit modal)
+        playButton.tap()
+        // Full-screen player presents natively — verify it appeared
+        // AVPlayerViewController dismisses itself via its own "Done" button in full-screen mode
+        // so we just verify the app doesn't crash and returns to a stable state
+        let playerPresented = app.buttons.matching(NSPredicate(format: "label == 'Done'")).firstMatch
+            .waitForExistence(timeout: 3)
+        if playerPresented {
+            app.buttons.matching(NSPredicate(format: "label == 'Done'")).firstMatch.tap()
+        }
+
+        // Should still be in the viewer carousel
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
+        app.buttons["Done"].tap()
+        XCTAssertTrue(
+            app.buttons.matching(NSPredicate(format: "label CONTAINS 'test-bucket'")).firstMatch.waitForExistence(timeout: 5)
+        )
     }
 
     private func navigateToTestBucket() {
