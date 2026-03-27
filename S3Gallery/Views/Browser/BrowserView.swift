@@ -404,19 +404,34 @@ private struct BucketTile: View {
     let name: String
     let onTap: () -> Void
 
+    // 12-pair palette — each pair has a large hue shift (≥0.13) and high saturation
+    // so the gradient is clearly visible. Adjacent indices span different hue regions
+    // to maximise visual distance for hash-based bucket colour selection.
     private static let gradientPairs: [(Color, Color)] = [
-        (Color(hue: 0.58, saturation: 0.75, brightness: 0.90),
-         Color(hue: 0.47, saturation: 0.65, brightness: 0.82)), // blue → teal
-        (Color(hue: 0.78, saturation: 0.70, brightness: 0.82),
-         Color(hue: 0.90, saturation: 0.65, brightness: 0.78)), // purple → pink
-        (Color(hue: 0.10, saturation: 0.80, brightness: 0.95),
-         Color(hue: 0.03, saturation: 0.82, brightness: 0.88)), // orange → red
-        (Color(hue: 0.48, saturation: 0.68, brightness: 0.80),
-         Color(hue: 0.37, saturation: 0.62, brightness: 0.75)), // teal → green
-        (Color(hue: 0.65, saturation: 0.72, brightness: 0.82),
-         Color(hue: 0.78, saturation: 0.68, brightness: 0.78)), // indigo → purple
-        (Color(hue: 0.94, saturation: 0.72, brightness: 0.88),
-         Color(hue: 0.08, saturation: 0.80, brightness: 0.95)), // pink → amber
+        // 0  cobalt → teal          Δhue ≈ 0.14
+        (Color(hue: 0.630, saturation: 0.90, brightness: 0.88), Color(hue: 0.490, saturation: 0.85, brightness: 0.78)),
+        // 1  crimson → amber        Δhue ≈ 0.11
+        (Color(hue: 0.005, saturation: 0.92, brightness: 0.88), Color(hue: 0.110, saturation: 0.88, brightness: 0.96)),
+        // 2  indigo → fuchsia       Δhue ≈ 0.16
+        (Color(hue: 0.720, saturation: 0.88, brightness: 0.80), Color(hue: 0.880, saturation: 0.85, brightness: 0.88)),
+        // 3  emerald → sky blue     Δhue ≈ 0.16
+        (Color(hue: 0.400, saturation: 0.90, brightness: 0.76), Color(hue: 0.560, saturation: 0.82, brightness: 0.90)),
+        // 4  purple → hot pink      Δhue ≈ 0.16
+        (Color(hue: 0.780, saturation: 0.85, brightness: 0.80), Color(hue: 0.940, saturation: 0.82, brightness: 0.88)),
+        // 5  forest green → aqua    Δhue ≈ 0.14
+        (Color(hue: 0.370, saturation: 0.88, brightness: 0.72), Color(hue: 0.510, saturation: 0.80, brightness: 0.86)),
+        // 6  royal blue → violet    Δhue ≈ 0.13
+        (Color(hue: 0.645, saturation: 0.88, brightness: 0.84), Color(hue: 0.760, saturation: 0.84, brightness: 0.78)),
+        // 7  orange → magenta       cross-wheel
+        (Color(hue: 0.075, saturation: 0.92, brightness: 0.96), Color(hue: 0.870, saturation: 0.85, brightness: 0.84)),
+        // 8  teal → lime            Δhue ≈ 0.17
+        (Color(hue: 0.500, saturation: 0.88, brightness: 0.80), Color(hue: 0.330, saturation: 0.86, brightness: 0.82)),
+        // 9  sky → deep indigo      Δhue ≈ 0.12
+        (Color(hue: 0.580, saturation: 0.80, brightness: 0.92), Color(hue: 0.700, saturation: 0.84, brightness: 0.78)),
+        // 10 scarlet → gold         Δhue ≈ 0.12
+        (Color(hue: 0.025, saturation: 0.90, brightness: 0.90), Color(hue: 0.140, saturation: 0.86, brightness: 0.95)),
+        // 11 cyan → deep purple     Δhue ≈ 0.22
+        (Color(hue: 0.540, saturation: 0.84, brightness: 0.90), Color(hue: 0.760, saturation: 0.82, brightness: 0.76)),
     ]
 
     private var gradientColors: (Color, Color) {

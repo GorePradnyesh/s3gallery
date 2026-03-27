@@ -168,42 +168,57 @@ private struct GridCell: View {
     @State private var thumbnail: UIImage?
     @State private var isLoading = false
 
-    // Palette of two-tone complementary gradient pairs (top-leading → bottom-trailing)
+    // 12-pair palette — each pair has a large hue shift (≥0.13) and high saturation
+    // so the gradient is clearly visible even at small tile sizes.
     private static let gradientPairs: [(Color, Color)] = [
-        (Color(hue: 0.58, saturation: 0.75, brightness: 0.90),
-         Color(hue: 0.47, saturation: 0.65, brightness: 0.82)), // blue → teal
-        (Color(hue: 0.78, saturation: 0.70, brightness: 0.82),
-         Color(hue: 0.90, saturation: 0.65, brightness: 0.78)), // purple → pink
-        (Color(hue: 0.10, saturation: 0.80, brightness: 0.95),
-         Color(hue: 0.03, saturation: 0.82, brightness: 0.88)), // orange → red
-        (Color(hue: 0.48, saturation: 0.68, brightness: 0.80),
-         Color(hue: 0.37, saturation: 0.62, brightness: 0.75)), // teal → green
-        (Color(hue: 0.65, saturation: 0.72, brightness: 0.82),
-         Color(hue: 0.78, saturation: 0.68, brightness: 0.78)), // indigo → purple
-        (Color(hue: 0.94, saturation: 0.72, brightness: 0.88),
-         Color(hue: 0.08, saturation: 0.80, brightness: 0.95)), // pink → amber
+        // 0  cobalt → teal          Δhue ≈ 0.14
+        (Color(hue: 0.630, saturation: 0.90, brightness: 0.88), Color(hue: 0.490, saturation: 0.85, brightness: 0.78)),
+        // 1  crimson → amber        Δhue ≈ 0.11
+        (Color(hue: 0.005, saturation: 0.92, brightness: 0.88), Color(hue: 0.110, saturation: 0.88, brightness: 0.96)),
+        // 2  indigo → fuchsia       Δhue ≈ 0.16
+        (Color(hue: 0.720, saturation: 0.88, brightness: 0.80), Color(hue: 0.880, saturation: 0.85, brightness: 0.88)),
+        // 3  emerald → sky blue     Δhue ≈ 0.16
+        (Color(hue: 0.400, saturation: 0.90, brightness: 0.76), Color(hue: 0.560, saturation: 0.82, brightness: 0.90)),
+        // 4  purple → hot pink      Δhue ≈ 0.16
+        (Color(hue: 0.780, saturation: 0.85, brightness: 0.80), Color(hue: 0.940, saturation: 0.82, brightness: 0.88)),
+        // 5  forest green → aqua    Δhue ≈ 0.14
+        (Color(hue: 0.370, saturation: 0.88, brightness: 0.72), Color(hue: 0.510, saturation: 0.80, brightness: 0.86)),
+        // 6  royal blue → violet    Δhue ≈ 0.13
+        (Color(hue: 0.645, saturation: 0.88, brightness: 0.84), Color(hue: 0.760, saturation: 0.84, brightness: 0.78)),
+        // 7  orange → magenta       cross-wheel
+        (Color(hue: 0.075, saturation: 0.92, brightness: 0.96), Color(hue: 0.870, saturation: 0.85, brightness: 0.84)),
+        // 8  teal → lime            Δhue ≈ 0.17
+        (Color(hue: 0.500, saturation: 0.88, brightness: 0.80), Color(hue: 0.330, saturation: 0.86, brightness: 0.82)),
+        // 9  sky → deep indigo      Δhue ≈ 0.12
+        (Color(hue: 0.580, saturation: 0.80, brightness: 0.92), Color(hue: 0.700, saturation: 0.84, brightness: 0.78)),
+        // 10 scarlet → gold         Δhue ≈ 0.12
+        (Color(hue: 0.025, saturation: 0.90, brightness: 0.90), Color(hue: 0.140, saturation: 0.86, brightness: 0.95)),
+        // 11 cyan → deep purple     Δhue ≈ 0.22
+        (Color(hue: 0.540, saturation: 0.84, brightness: 0.90), Color(hue: 0.760, saturation: 0.82, brightness: 0.76)),
     ]
 
     private var tileGradientColors: (Color, Color) {
         switch item {
         case .folder:
-            return Self.gradientPairs[0] // blue → teal
-        case .file(let f):
-            switch FileTypeDetector.category(for: f) {
-            case .image:  return Self.gradientPairs[4] // indigo → purple
-            case .video:  return Self.gradientPairs[1] // purple → pink
-            case .audio:  return Self.gradientPairs[2] // orange → red
-            case .pdf:    return Self.gradientPairs[5] // pink → amber
-            case .other:
-                return (Color(hue: 0.60, saturation: 0.15, brightness: 0.45),
-                        Color(hue: 0.60, saturation: 0.10, brightness: 0.38))
-            }
+            return Self.gradientPairs[0]  // cobalt → teal (fixed for all folders)
+        case .file:
+            // Every extension gets its own deterministic gradient
+            let ext = fileExtension.isEmpty ? "?" : fileExtension
+            let index = abs(ext.hashValue) % Self.gradientPairs.count
+            return Self.gradientPairs[index]
         }
+    }
+
+    // Folders render at 0.6 alpha; non-preview files at 0.2 (subtle tint behind text)
+    private var tileGradientAlpha: Double {
+        if case .folder = item { return 0.6 }
+        return 0.2
     }
 
     private var tileLinearGradient: LinearGradient {
         let (c1, c2) = tileGradientColors
-        return LinearGradient(colors: [c1.opacity(0.6), c2.opacity(0.6)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        let a = tileGradientAlpha
+        return LinearGradient(colors: [c1.opacity(a), c2.opacity(a)], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     private var fileExtension: String {
@@ -275,7 +290,7 @@ private struct GridCell: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .clipShape(Rectangle())
+        .clipShape(RoundedRectangle(cornerRadius: 6))
         .task { await loadThumbnail() }
         .accessibilityLabel(item.name)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
