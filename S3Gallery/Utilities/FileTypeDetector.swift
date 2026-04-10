@@ -20,6 +20,22 @@ enum FileTypeDetector {
         "mp3", "aac", "m4a", "flac", "wav", "aiff", "ogg", "opus", "wma"
     ]
 
+    // Built once at load; covers all natively previewable extensions without UTType overhead.
+    static let previewableExtensions: Set<String> =
+        imageExtensions.union(videoExtensions).union(audioExtensions).union(["pdf"])
+
+    /// Returns true if the app has a native viewer for this extension.
+    /// Checks the pre-built set first (O(1)), then falls back to UTType for uncommon extensions.
+    static func canPreview(_ fileExtension: String) -> Bool {
+        let ext = fileExtension.lowercased()
+        if previewableExtensions.contains(ext) { return true }
+        if let utType = UTType(filenameExtension: ext) {
+            return utType.conforms(to: .image) || utType.conforms(to: .movie)
+                || utType.conforms(to: .audio) || utType.conforms(to: .pdf)
+        }
+        return false
+    }
+
     static func category(for fileExtension: String) -> FileCategory {
         let ext = fileExtension.lowercased()
 

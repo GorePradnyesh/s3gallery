@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 
 func clampedColumnCount(current: Int, scale: CGFloat) -> Int {
     let raw = Double(current) / Double(scale)
@@ -164,6 +165,12 @@ private extension UIView {
     }
 }
 
+private enum ThumbnailLoadState {
+    case idle
+    case queued
+    case downloading(progress: Double?)
+}
+
 // MARK: - Grid cell
 
 private struct GridCell: View {
@@ -173,7 +180,7 @@ private struct GridCell: View {
 
     @State private var thumbnail: UIImage?
     @State private var imageAspectRatio: CGFloat = 1.0
-    @State private var isLoading = false
+    @State private var loadState: ThumbnailLoadState = .idle
 
     // 12-pair palette — each pair has a large hue shift (≥0.13) and high saturation
     // so the gradient is clearly visible even at small tile sizes.
@@ -216,10 +223,11 @@ private struct GridCell: View {
         }
     }
 
-    // Folders render at 0.6 alpha; non-preview files at 0.2 (subtle tint behind text)
+    // Folders and previewable files at 0.6; non-previewable files at 0.2 (subtle tint behind text)
     private var tileGradientAlpha: Double {
         if case .folder = item { return 0.6 }
-        return 0.2
+        guard case .file(let f) = item else { return 0.2 }
+        return FileTypeDetector.canPreview(f.fileExtension) ? 0.6 : 0.2
     }
 
     private var tileLinearGradient: LinearGradient {
@@ -233,6 +241,45 @@ private struct GridCell: View {
         return URL(fileURLWithPath: f.name).pathExtension.uppercased()
     }
 
+    @ViewBuilder
+    private var tilePlaceholder: some View {
+        if case .folder = item {
+            VStack(spacing: 6) {
+                Image(systemName: "folder.fill")
+                    .font(.title)
+                    .foregroundStyle(.white)
+                    .shadow(radius: 2)
+                Text(item.name)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.white)
+                    .shadow(radius: 1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 4)
+            }
+        } else {
+            let ext = fileExtension
+            VStack(spacing: 4) {
+                if ext.isEmpty {
+                    Image(systemName: item.systemImageName)
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .shadow(radius: 2)
+                } else {
+                    Text(ext)
+                        .font(.system(size: 18, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .shadow(radius: 2)
+                }
+                Text(item.name)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(1)
+                    .padding(.horizontal, 4)
+            }
+        }
+    }
+
     var body: some View {
         ZStack {
             if let thumb = thumbnail {
@@ -241,42 +288,32 @@ private struct GridCell: View {
                     .scaledToFit()
             } else {
                 tileLinearGradient
-                if isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else if case .folder = item {
-                    VStack(spacing: 6) {
-                        Image(systemName: "folder.fill")
-                            .font(.title)
+                switch loadState {
+                case .idle:
+                    tilePlaceholder
+                case .queued:
+                    tilePlaceholder
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Image(systemName: "hourglass")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.5), radius: 2)
+                                .padding(4)
+                        }
+                    }
+                case .downloading(let progress):
+                    if let p = progress {
+                        Color.black.opacity(0.3)
+                        Text("\(Int(p * 100))%")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
                             .shadow(radius: 2)
-                        Text(item.name)
-                            .font(.caption2.bold())
-                            .foregroundStyle(.white)
-                            .shadow(radius: 1)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 4)
-                    }
-                } else {
-                    let ext = fileExtension
-                    VStack(spacing: 4) {
-                        if ext.isEmpty {
-                            Image(systemName: item.systemImageName)
-                                .font(.title2)
-                                .foregroundStyle(.white)
-                                .shadow(radius: 2)
-                        } else {
-                            Text(ext)
-                                .font(.system(size: 18, weight: .black, design: .rounded))
-                                .foregroundStyle(.white)
-                                .shadow(radius: 2)
-                        }
-                        Text(item.name)
-                            .font(.caption2)
-                            .foregroundStyle(.white.opacity(0.9))
-                            .lineLimit(1)
-                            .padding(.horizontal, 4)
+                    } else {
+                        ProgressView()
+                            .tint(.white)
                     }
                 }
             }
@@ -316,23 +353,47 @@ private struct GridCell: View {
             return
         }
 
-        isLoading = true
-        defer { isLoading = false }
+        loadState = .queued
+        defer { loadState = .idle }
+
+        // Wait for a free download slot; bail if cancelled before getting one.
+        do { try await ThumbnailLoader.shared.acquire() } catch { return }
+        defer { Task { await ThumbnailLoader.shared.release() } }
 
         do {
             let url = try await s3Service.presignedURL(for: fileItem, ttl: 900)
-            let (data, _) = try await URLSession.shared.data(from: url)
-            guard let full = UIImage(data: data) else { return }
+            let (asyncBytes, response) = try await URLSession.shared.bytes(from: url)
+            let totalBytes = (response as? HTTPURLResponse)?
+                .value(forHTTPHeaderField: "Content-Length")
+                .flatMap(Int64.init) ?? 0
 
-            // Store full-res data if the setting is enabled
+            loadState = .downloading(progress: totalBytes > 0 ? 0 : nil)
+
+            var data = Data(capacity: totalBytes > 0 ? Int(min(totalBytes, 100_000_000)) : 4_000_000)
+            var received: Int64 = 0
+            var lastReported: Double = -1
+
+            for try await byte in asyncBytes {
+                data.append(byte)
+                received += 1
+                if totalBytes > 0 {
+                    let progress = Double(received) / Double(totalBytes)
+                    if progress - lastReported >= 0.05 {
+                        lastReported = progress
+                        loadState = .downloading(progress: progress)
+                    }
+                }
+            }
+
             if CacheService.shared.cacheFullResolution {
                 CacheService.shared.storeFullResData(data, forKey: cacheKey)
             }
 
-            // Scale to 1/4 resolution (half each dimension), capped at HD
-            let thumb = await full.thumbnailScaled(to: full.quarterResolutionSize)
+            // Decode directly to thumbnail size via ImageIO — never allocates a
+            // full-resolution pixel buffer, slashing per-image peak memory.
+            guard let thumb = await makeImageIOThumbnail(from: data, maxPixelSize: 960) else { return }
             CacheService.shared.storeThumbnail(thumb, forKey: thumbKey)
-            imageAspectRatio = full.size.width / full.size.height
+            imageAspectRatio = thumb.size.width / thumb.size.height
             thumbnail = thumb
         } catch {
             // Fall through to placeholder icon
@@ -340,29 +401,31 @@ private struct GridCell: View {
     }
 }
 
-// MARK: - UIImage thumbnail helper
+// MARK: - ImageIO thumbnail helper
 
-private extension UIImage {
-    /// 1/4 of the original pixel count (half each dimension), capped at HD (1920×1080).
-    var quarterResolutionSize: CGSize {
-        let quarter = CGSize(width: size.width / 2, height: size.height / 2)
-        let hdCap = CGSize(width: 1920, height: 1080)
-        let capScale = min(hdCap.width / quarter.width, hdCap.height / quarter.height)
-        guard capScale < 1 else { return quarter }
-        return CGSize(width: (quarter.width * capScale).rounded(), height: (quarter.height * capScale).rounded())
-    }
-
-    func thumbnailScaled(to maxSize: CGSize) async -> UIImage {
-        await withCheckedContinuation { continuation in
-            Task.detached(priority: .utility) {
-                let scale = min(maxSize.width / self.size.width, maxSize.height / self.size.height)
-                let scaledSize = CGSize(width: self.size.width * scale, height: self.size.height * scale)
-                let renderer = UIGraphicsImageRenderer(size: scaledSize)
-                let thumb = renderer.image { _ in
-                    self.draw(in: CGRect(origin: .zero, size: scaledSize))
-                }
-                continuation.resume(returning: thumb)
+/// Decodes `data` into a thumbnail whose longest edge is at most `maxPixelSize` points.
+/// ImageIO sub-samples the image during decoding so the full pixel buffer is never
+/// allocated — dramatically lower peak RAM compared to UIImage(data:) + redraw.
+func makeImageIOThumbnail(from data: Data, maxPixelSize: Int) async -> UIImage? {
+    await withCheckedContinuation { continuation in
+        Task.detached(priority: .utility) {
+            let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+            guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else {
+                continuation.resume(returning: nil)
+                return
             }
+            let thumbOptions: [CFString: Any] = [
+                kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+            ]
+            guard let cgImage = CGImageSourceCreateThumbnailAtIndex(
+                source, 0, thumbOptions as CFDictionary
+            ) else {
+                continuation.resume(returning: nil)
+                return
+            }
+            continuation.resume(returning: UIImage(cgImage: cgImage))
         }
     }
 }

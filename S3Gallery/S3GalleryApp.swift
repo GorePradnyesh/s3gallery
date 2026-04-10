@@ -40,6 +40,7 @@ struct S3GalleryApp: App {
 
 struct RootView: View {
     @Bindable var authViewModel: AuthViewModel
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Group {
@@ -56,5 +57,7 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: authViewModel.isAuthenticated)
+        .fontWeight(.light)
+        .foregroundStyle(colorScheme == .dark ? Color.white : Color.primary)
     }
 }

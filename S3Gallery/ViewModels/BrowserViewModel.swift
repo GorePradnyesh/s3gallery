@@ -23,7 +23,7 @@ final class BrowserViewModel {
     var navigationStack: [BrowseState] = []
     var items: [S3Item] = []
     var loadState: BrowserLoadState = .idle
-    var sortOption: SortOption = .nameAscending
+    var sortOption: SortOption = .dateNewest
     var buckets: [String] = []
     var isCheckingWriteAccess = false
     private(set) var currentBucketHasWriteAccess: Bool? = nil
