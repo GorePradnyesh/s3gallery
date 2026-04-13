@@ -30,6 +30,8 @@ struct S3GalleryApp: App {
             }
             if !UITestArgs.noKeychain && !UITestArgs.skipLogin {
                 await authViewModel.checkExistingCredentials()
+            } else {
+                authViewModel.authState = .idle
             }
             return
         }
@@ -44,9 +46,11 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if authViewModel.isAuthenticated,
-               let service = authViewModel.activeService,
-               let credentials = authViewModel.credentials {
+            if authViewModel.authState == .validating {
+                CredentialValidationView()
+            } else if authViewModel.isAuthenticated,
+                      let service = authViewModel.activeService,
+                      let credentials = authViewModel.credentials {
                 BrowserView(
                     viewModel: BrowserViewModel(s3Service: service),
                     credentials: credentials,
@@ -56,8 +60,21 @@ struct RootView: View {
                 LoginView(viewModel: authViewModel)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: authViewModel.isAuthenticated)
+        .animation(.easeInOut(duration: 0.3), value: authViewModel.authState)
         .fontWeight(.light)
         .foregroundStyle(colorScheme == .dark ? Color.white : Color.primary)
+    }
+}
+
+private struct CredentialValidationView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Validating…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

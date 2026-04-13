@@ -39,9 +39,8 @@ final class LoginFlowTests: XCTestCase {
         secretField.tap()
         secretField.typeText(secret)
 
-        let regionField = app.textFields["us-east-1"]
-        regionField.tap()
-        regionField.clearAndEnterText(region)
+        app.buttons["AWS Region"].tap()
+        app.buttons["region-option-" + region].tap()
     }
 }
 
@@ -70,9 +69,8 @@ final class LoginFailureFlowTests: XCTestCase {
         secretField.tap()
         secretField.typeText("badsecret")
 
-        let regionField = app.textFields["us-east-1"]
-        regionField.tap()
-        regionField.clearAndEnterText("us-east-1")
+        app.buttons["AWS Region"].tap()
+        app.buttons["region-option-us-east-1"].tap()
 
         app.buttons["Connect"].tap()
 

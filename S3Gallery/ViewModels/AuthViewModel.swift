@@ -3,6 +3,7 @@ import Observation
 
 enum AuthState: Equatable {
     case idle
+    case validating
     case loading
     case success
     case failure(String)
@@ -13,7 +14,7 @@ final class AuthViewModel {
     var accessKeyId: String = ""
     var secretAccessKey: String = ""
     var region: String = "us-east-1"
-    var authState: AuthState = .idle
+    var authState: AuthState = .validating
     var isAuthenticated: Bool = false
 
     private(set) var activeService: (any S3ServiceProtocol)?
@@ -35,16 +36,22 @@ final class AuthViewModel {
     // MARK: - App launch
 
     func checkExistingCredentials() async {
-        guard let creds = try? credentialsService.load() else { return }
+        authState = .validating
+        guard let creds = try? credentialsService.load() else {
+            authState = .idle
+            return
+        }
         do {
             let service = try await serviceFactory(creds)
             _ = try await service.listBuckets()
             activeService = service
             credentials = creds
             isAuthenticated = true
+            authState = .success
         } catch {
             // Stored credentials are no longer valid — clear them
             try? credentialsService.delete()
+            authState = .idle
         }
     }
 
@@ -98,6 +105,7 @@ final class AuthViewModel {
                                   secretAccessKey: "uitest-secret",
                                   region: "us-east-1")
         isAuthenticated = true
+        authState = .idle
     }
 #endif
 

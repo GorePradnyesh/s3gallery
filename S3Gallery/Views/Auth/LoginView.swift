@@ -137,6 +137,7 @@ private struct LabeledRegionPicker: View {
                 Picker("AWS Region", selection: $selection) {
                     ForEach(regions, id: \.self) { region in
                         Text(region).tag(region)
+                            .accessibilityIdentifier("region-option-" + region)
                     }
                 }
             } label: {
