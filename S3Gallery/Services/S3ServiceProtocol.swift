@@ -6,6 +6,8 @@ protocol S3ServiceProtocol: AnyObject {
     func presignedURL(for item: S3FileItem, ttl: TimeInterval) async throws -> URL
     func checkWriteAccess(bucket: String) async throws -> Bool
     func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws
+    func createFolder(bucket: String, key: String) async throws
+    func prefixExists(bucket: String, prefix: String) async throws -> Bool
 }
 
 enum S3ServiceError: Error, LocalizedError {
@@ -14,6 +16,7 @@ enum S3ServiceError: Error, LocalizedError {
     case unauthorized
     case notFound(String)
     case uploadFailed(String)
+    case folderAlreadyExists
 
     var errorDescription: String? {
         switch self {
@@ -27,6 +30,8 @@ enum S3ServiceError: Error, LocalizedError {
             return "Object not found: \(key)"
         case .uploadFailed(let detail):
             return "Upload failed: \(detail)"
+        case .folderAlreadyExists:
+            return "A folder with this name already exists."
         }
     }
 }

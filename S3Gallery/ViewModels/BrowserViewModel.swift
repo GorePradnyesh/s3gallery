@@ -10,6 +10,12 @@ enum SortOption: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum CreateFolderError: LocalizedError {
+    case alreadyExists
+
+    var errorDescription: String? { "A folder with this name already exists." }
+}
+
 enum BrowserLoadState: Equatable {
     case idle
     case loading
@@ -103,6 +109,16 @@ final class BrowserViewModel {
 
     func refresh() async {
         await loadCurrentFolder()
+    }
+
+    func createFolder(named name: String) async throws {
+        guard let state = currentState else { return }
+        let folderPrefix = state.prefix + name + "/"
+        let exists = try await s3Service.prefixExists(bucket: state.bucket, prefix: folderPrefix)
+        guard !exists else { throw CreateFolderError.alreadyExists }
+        let probeKey = folderPrefix + ".s3gallery-probe"
+        try await s3Service.createFolder(bucket: state.bucket, key: probeKey)
+        await refresh()
     }
 
     // MARK: - Sorted items

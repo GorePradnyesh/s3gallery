@@ -75,6 +75,14 @@ final class UITestMockS3Service: S3ServiceProtocol {
             if uploadCallCount == 2 { throw UITestError.uploadFailed }
         }
     }
+
+    func createFolder(bucket: String, key: String) async throws {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+    }
+
+    func prefixExists(bucket: String, prefix: String) async throws -> Bool {
+        false
+    }
 }
 
 enum UITestError: Error, LocalizedError {

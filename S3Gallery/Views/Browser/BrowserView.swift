@@ -2,14 +2,16 @@ import SwiftUI
 
 private enum BrowserSheet: Identifiable {
     case viewer(items: [S3FileItem], index: Int)
-    case upload(BrowseState)
+    case upload(BrowseState, source: UploadSource? = nil)
+    case createFolder(BrowseState)
     case share([URL])
     case copyToFiles([URL])
 
     var id: String {
         switch self {
         case .viewer(let items, let index): return "viewer-\(items[index].id)"
-        case .upload(let state): return "upload-\(state.bucket)-\(state.prefix)"
+        case .upload(let state, _): return "upload-\(state.bucket)-\(state.prefix)"
+        case .createFolder(let state): return "createFolder-\(state.bucket)-\(state.prefix)"
         case .share: return "share"
         case .copyToFiles: return "copyToFiles"
         }
@@ -23,7 +25,6 @@ struct BrowserView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.colorScheme) private var colorScheme
 
     @State private var viewMode: ViewMode = .grid
     @State private var gridColumnCount: Int = Self.defaultGridColumnCount()
@@ -49,7 +50,7 @@ struct BrowserView: View {
                 switch sheet {
                 case .viewer(let items, let index):
                     ViewerCarousel(items: items, initialIndex: index, s3Service: viewModel.s3Service)
-                case .upload(let state):
+                case .upload(let state, let source):
                     UploadSheet(
                         viewModel: UploadViewModel(
                             bucket: state.bucket,
@@ -57,6 +58,13 @@ struct BrowserView: View {
                             s3Service: viewModel.s3Service
                         ),
                         onSuccess: { await viewModel.refresh() },
+                        onDismiss: { activeSheet = nil },
+                        initialSource: source
+                    )
+                case .createFolder(let state):
+                    CreateFolderSheet(
+                        state: state,
+                        viewModel: viewModel,
                         onDismiss: { activeSheet = nil }
                     )
                 case .share(let urls):
@@ -151,13 +159,6 @@ struct BrowserView: View {
                         }
                 }
             }
-            .overlay(alignment: .bottomTrailing) {
-                if !viewModel.isSelectionMode {
-                    uploadFAB
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 24)
-                }
-            }
             .overlay(alignment: .bottom) {
                 if isDownloadingForAction {
                     downloadingOverlay
@@ -191,43 +192,6 @@ struct BrowserView: View {
             }
             .padding(24)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-        }
-    }
-
-    @ViewBuilder
-    private var uploadFAB: some View {
-        if viewModel.isCheckingWriteAccess {
-            ZStack {
-                Circle()
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 56, height: 56)
-                ProgressView()
-            }
-            .shadow(color: colorScheme == .dark ? .white.opacity(0.4) : .black.opacity(0.3), radius: 6)
-        } else if let hasWrite = viewModel.currentBucketHasWriteAccess {
-            Button {
-                if hasWrite, let state = viewModel.currentState {
-                    activeSheet = .upload(state)
-                }
-            } label: {
-                ZStack(alignment: .bottomTrailing) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(hasWrite ? .blue : .secondary)
-                        .symbolRenderingMode(.hierarchical)
-                    if !hasWrite {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(.white)
-                            .background(Circle().fill(.secondary).padding(-3))
-                            .offset(x: 2, y: 2)
-                    }
-                }
-            }
-            .disabled(!hasWrite)
-            .shadow(color: colorScheme == .dark ? .white.opacity(0.4) : .black.opacity(0.3), radius: 6)
-            .accessibilityLabel(hasWrite ? "Upload file" : "Read only bucket")
-            .accessibilityIdentifier(hasWrite ? "Upload file" : "Read only bucket")
         }
     }
 
@@ -280,9 +244,40 @@ struct BrowserView: View {
                     }
                     .accessibilityIdentifier("Done")
                 } else {
-                    Button("Select") {
-                        viewModel.enterSelectionMode()
+                    if viewModel.isCheckingWriteAccess {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else if viewModel.currentBucketHasWriteAccess == true,
+                              let state = viewModel.currentState {
+                        Menu {
+                            Button {
+                                activeSheet = .upload(state, source: .photos)
+                            } label: {
+                                Label("Photo Library", systemImage: "photo.on.rectangle")
+                            }
+                            Button {
+                                activeSheet = .upload(state, source: .files)
+                            } label: {
+                                Label("Files", systemImage: "folder")
+                            }
+                            Divider()
+                            Button {
+                                activeSheet = .createFolder(state)
+                            } label: {
+                                Label("New Folder", systemImage: "folder.badge.plus")
+                            }
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("Add")
+                        .accessibilityIdentifier("Add")
                     }
+                    Button {
+                        viewModel.enterSelectionMode()
+                    } label: {
+                        Image(systemName: "checkmark.circle")
+                    }
+                    .accessibilityLabel("Select")
                     .accessibilityIdentifier("Select")
                     SortMenuButton(sortOption: $viewModel.sortOption)
                     ViewModeToggle(mode: $viewMode)

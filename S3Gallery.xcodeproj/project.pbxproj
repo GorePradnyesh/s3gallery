@@ -24,6 +24,7 @@
 		36901F20A6DD18C8A138E214 /* CredentialsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B51B0FB3DE8FBA3B565423 /* CredentialsService.swift */; };
 		381A41F7B7AD4A43A7B029C3 /* FileActionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D1E1D44E5BB4460B7115F7C /* FileActionServiceTests.swift */; };
 		3A1A14B79A5144C1ABEC9B37 /* UploadSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */; };
+		0362BE4B5652448AAB0265EB /* CreateFolderSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310E12B6D921473591E09588 /* CreateFolderSheet.swift */; };
 		3EEB802352024E249B862A6A /* FileActionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8FEA8E7CC82466BBCFE31C4 /* FileActionService.swift */; };
 		4591B4882A55F3B113960969 /* CredentialsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF04F110CA4A7D0E23C5AD9 /* CredentialsServiceTests.swift */; };
 		474107FE33288AADC03D7847 /* S3Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15912A41DEE2D46BD0E1107 /* S3Service.swift */; };
@@ -130,6 +131,7 @@
 		9DD30D9B04A740B9AD6D8EC5 /* ThumbnailLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailLoader.swift; sourceTree = "<group>"; };
 		9E97CF58EFC6F3F97C03E18C /* S3Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = S3Item.swift; sourceTree = "<group>"; };
 		A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadSheet.swift; sourceTree = "<group>"; };
+		310E12B6D921473591E09588 /* CreateFolderSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateFolderSheet.swift; sourceTree = "<group>"; };
 		A3F0405175014770AF1296F8 /* FileActionFlowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActionFlowTests.swift; sourceTree = "<group>"; };
 		A86098DF4E184E0588352938 /* SelectionActionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionActionBar.swift; sourceTree = "<group>"; };
 		A8FEA8E7CC82466BBCFE31C4 /* FileActionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActionService.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 				B0F0CF66C449BD88C3A15F81 /* BrowserView.swift */,
 				637463A6C3E609560B71729B /* S3ItemRow.swift */,
 				A29584D2C6ED4F8EA08845B3 /* UploadSheet.swift */,
+				310E12B6D921473591E09588 /* CreateFolderSheet.swift */,
 				A86098DF4E184E0588352938 /* SelectionActionBar.swift */,
 			);
 			path = Browser;
@@ -530,6 +533,7 @@
 				9E31D9250AF1087328EC1C6E /* SettingsView.swift in Sources */,
 				1895D3A17E4E74777F59F95F /* UITestSupport.swift in Sources */,
 				3A1A14B79A5144C1ABEC9B37 /* UploadSheet.swift in Sources */,
+				0362BE4B5652448AAB0265EB /* CreateFolderSheet.swift in Sources */,
 				B01551CD5CB245F193F845E5 /* UploadViewModel.swift in Sources */,
 				4A445D4F3281BD9EAC1E4162 /* VideoPlayerView.swift in Sources */,
 				C64C588E8DAEE91663C9EE6B /* ViewerContainer.swift in Sources */,

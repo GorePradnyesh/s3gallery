@@ -3,10 +3,15 @@ import PhotosUI
 import UniformTypeIdentifiers
 import QuickLook
 
+enum UploadSource {
+    case photos, files
+}
+
 struct UploadSheet: View {
     @Bindable var viewModel: UploadViewModel
     let onSuccess: () async -> Void
     let onDismiss: () -> Void
+    var initialSource: UploadSource? = nil
 
     @State private var showPhotosPicker = false
     @State private var showFilePicker = false
@@ -59,6 +64,13 @@ struct UploadSheet: View {
             loadingTask = Task { await stagePhotoItems(newItems) }
         }
         .quickLookPreview($previewURL)
+        .task(id: initialSource.map { "\($0)" }) {
+            switch initialSource {
+            case .photos: showPhotosPicker = true
+            case .files:  showFilePicker = true
+            case nil: break
+            }
+        }
 #if DEBUG
         .task {
             if UITestArgs.autoStage {

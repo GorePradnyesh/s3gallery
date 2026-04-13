@@ -49,9 +49,10 @@ final class S3Service: S3ServiceProtocol {
                 return S3Item.folder(name: displayName, prefix: p)
             } ?? []
 
-            // Contents become file items (skip the prefix placeholder itself)
+            // Contents become file items (skip the prefix placeholder and internal probe files)
             let files: [S3Item] = output.contents?.compactMap { obj -> S3Item? in
-                guard let key = obj.key, key != prefix, !key.hasSuffix("/") else { return nil }
+                guard let key = obj.key, key != prefix, !key.hasSuffix("/"),
+                      !key.hasSuffix(".s3gallery-probe") else { return nil }
                 let fileItem = S3FileItem(
                     key: key,
                     bucket: bucket,
@@ -104,5 +105,30 @@ final class S3Service: S3ServiceProtocol {
         } catch {
             throw S3ServiceError.uploadFailed(error.localizedDescription)
         }
+    }
+
+    func createFolder(bucket: String, key: String) async throws {
+        do {
+            _ = try await client.putObject(input: PutObjectInput(
+                body: .data(Data()),
+                bucket: bucket,
+                contentLength: 0,
+                contentType: "application/octet-stream",
+                key: key
+            ))
+        } catch {
+            throw S3ServiceError.uploadFailed(error.localizedDescription)
+        }
+    }
+
+    func prefixExists(bucket: String, prefix: String) async throws -> Bool {
+        let input = ListObjectsV2Input(
+            bucket: bucket,
+            delimiter: "/",
+            maxKeys: 1,
+            prefix: prefix
+        )
+        let output = try await client.listObjectsV2(input: input)
+        return (output.contents?.count ?? 0) > 0 || (output.commonPrefixes?.count ?? 0) > 0
     }
 }
