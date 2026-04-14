@@ -3,30 +3,43 @@ import SwiftUI
 struct SelectionActionBar: View {
     let selectedCount: Int
     let canSaveToPhotos: Bool
+    var selectedFolder: S3Item? = nil
     let onShare: () -> Void
     let onOpenIn: () -> Void
     let onSaveToPhotos: () -> Void
     let onCopyToFiles: () -> Void
+    let onMove: () -> Void
+    var onRename: (() -> Void)? = nil
+
+    private var hasSelection: Bool { selectedCount > 0 || selectedFolder != nil }
 
     var body: some View {
         VStack(spacing: 0) {
             Divider()
             HStack {
-                actionButton(icon: "square.and.arrow.up", label: "Share", action: onShare)
-                Spacer()
-                actionButton(icon: "arrow.up.forward.app", label: "Open In", action: onOpenIn)
-                if canSaveToPhotos {
+                if selectedFolder != nil {
                     Spacer()
-                    actionButton(icon: "square.and.arrow.down", label: "Save", action: onSaveToPhotos)
+                    actionButton(icon: "pencil", label: "Rename", action: onRename ?? {})
+                    Spacer()
+                } else {
+                    actionButton(icon: "square.and.arrow.up", label: "Share", action: onShare)
+                    Spacer()
+                    actionButton(icon: "arrow.up.forward.app", label: "Open In", action: onOpenIn)
+                    if canSaveToPhotos {
+                        Spacer()
+                        actionButton(icon: "square.and.arrow.down", label: "Save", action: onSaveToPhotos)
+                    }
+                    Spacer()
+                    actionButton(icon: "folder.badge.plus", label: "Files", action: onCopyToFiles)
+                    Spacer()
+                    actionButton(icon: "folder", label: "Move", action: onMove)
                 }
-                Spacer()
-                actionButton(icon: "folder.badge.plus", label: "Files", action: onCopyToFiles)
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 12)
             .background(.bar)
         }
-        .disabled(selectedCount == 0)
+        .disabled(!hasSelection)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("SelectionActionBar")
     }

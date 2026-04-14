@@ -15,6 +15,8 @@ enum UITestArgs {
     static var autoStage:           Bool { CommandLine.arguments.contains("--auto-stage") }
     static var mockPartialFailure:  Bool { CommandLine.arguments.contains("--mock-partial-failure") }
     static var mockFileAction:      Bool { CommandLine.arguments.contains("--mock-file-action") }
+    static var mockCopyFailure:     Bool { CommandLine.arguments.contains("--mock-copy-failure") }
+    static var mockMoveConflict:    Bool { CommandLine.arguments.contains("--mock-move-conflict") }
 }
 
 // MARK: - In-process mock S3 service for UI tests
@@ -50,10 +52,16 @@ final class UITestMockS3Service: S3ServiceProtocol {
                                  lastModified: Date(), eTag: nil)),
             ]
         }
-        return [
+        var items: [S3Item] = [
             .file(S3FileItem(key: "\(prefix)photo1.jpg", bucket: bucket, size: 1_024_000,
                              lastModified: Date(), eTag: nil)),
         ]
+        // Inject a conflicting file when testing move conflict detection
+        if UITestArgs.mockMoveConflict && prefix == "photos/" {
+            items.append(.file(S3FileItem(key: "photos/autumn.jpg", bucket: bucket,
+                                          size: 1_800_000, lastModified: Date(), eTag: nil)))
+        }
+        return items
     }
 
     func presignedURL(for item: S3FileItem, ttl: TimeInterval) async throws -> URL {
@@ -82,6 +90,20 @@ final class UITestMockS3Service: S3ServiceProtocol {
 
     func prefixExists(bucket: String, prefix: String) async throws -> Bool {
         false
+    }
+
+    func copyObject(bucket: String, sourceKey: String, destKey: String) async throws {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+        if UITestArgs.mockCopyFailure { throw UITestError.uploadFailed }
+    }
+
+    func deleteObject(bucket: String, key: String) async throws {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+    }
+
+    func listAllObjects(bucket: String, prefix: String) async throws -> [String] {
+        guard shouldSucceed else { throw UITestError.invalidCredentials }
+        return [prefix + ".s3gallery-probe"]
     }
 }
 

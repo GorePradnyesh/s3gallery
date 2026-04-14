@@ -27,7 +27,7 @@ struct S3ItemRow: View {
                 }
             }
             Spacer()
-            if inSelectionMode, case .file = item {
+            if inSelectionMode {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .font(.title3)

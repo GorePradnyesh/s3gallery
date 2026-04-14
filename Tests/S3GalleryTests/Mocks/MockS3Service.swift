@@ -6,9 +6,12 @@ final class MockS3Service: S3ServiceProtocol {
 
     var bucketsResult: Result<[String], Error> = .success(["test-bucket"])
     var objectsResult: Result<[S3Item], Error> = .success([])
+    var allObjectsResult: Result<[String], Error> = .success([])
     var presignedURLResult: Result<URL, Error> = .success(URL(string: "https://example.com/presigned")!)
     var checkWriteAccessResult: Result<Bool, Error> = .success(true)
     var uploadObjectResult: Result<Void, Error> = .success(())
+    var copyObjectResult: Result<Void, Error> = .success(())
+    var deleteObjectResult: Result<Void, Error> = .success(())
 
     /// Per-call result queue — consumed in order; falls back to `uploadObjectResult` when empty.
     var uploadObjectResults: [Result<Void, Error>] = []
@@ -21,9 +24,12 @@ final class MockS3Service: S3ServiceProtocol {
     private let lock = NSLock()
     private(set) var listBucketsCallCount = 0
     private(set) var listObjectsCalls: [(bucket: String, prefix: String)] = []
+    private(set) var listAllObjectsCalls: [(bucket: String, prefix: String)] = []
     private(set) var presignedURLCalls: [(item: S3FileItem, ttl: TimeInterval)] = []
     private(set) var checkWriteAccessCalls: [String] = []
     private(set) var uploadObjectCalls: [(bucket: String, key: String, contentType: String)] = []
+    private(set) var copyObjectCalls: [(bucket: String, sourceKey: String, destKey: String)] = []
+    private(set) var deleteObjectCalls: [(bucket: String, key: String)] = []
 
     // MARK: - S3ServiceProtocol
 
@@ -61,6 +67,29 @@ final class MockS3Service: S3ServiceProtocol {
         }
         lock.unlock()
         return try result.get()
+    }
+
+    func createFolder(bucket: String, key: String) async throws {
+        _ = try uploadObjectResult.get()
+    }
+
+    func prefixExists(bucket: String, prefix: String) async throws -> Bool {
+        return false
+    }
+
+    func copyObject(bucket: String, sourceKey: String, destKey: String) async throws {
+        copyObjectCalls.append((bucket, sourceKey, destKey))
+        return try copyObjectResult.get()
+    }
+
+    func deleteObject(bucket: String, key: String) async throws {
+        deleteObjectCalls.append((bucket, key))
+        return try deleteObjectResult.get()
+    }
+
+    func listAllObjects(bucket: String, prefix: String) async throws -> [String] {
+        listAllObjectsCalls.append((bucket, prefix))
+        return try allObjectsResult.get()
     }
 
     // MARK: - Helpers for test setup

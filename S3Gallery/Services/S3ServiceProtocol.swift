@@ -8,6 +8,10 @@ protocol S3ServiceProtocol: AnyObject {
     func uploadObject(bucket: String, key: String, data: Data, contentType: String) async throws
     func createFolder(bucket: String, key: String) async throws
     func prefixExists(bucket: String, prefix: String) async throws -> Bool
+    func copyObject(bucket: String, sourceKey: String, destKey: String) async throws
+    func deleteObject(bucket: String, key: String) async throws
+    /// Lists all object keys under `prefix` recursively (no delimiter), including probe files.
+    func listAllObjects(bucket: String, prefix: String) async throws -> [String]
 }
 
 enum S3ServiceError: Error, LocalizedError {
@@ -17,6 +21,8 @@ enum S3ServiceError: Error, LocalizedError {
     case notFound(String)
     case uploadFailed(String)
     case folderAlreadyExists
+    case copyFailed(String)
+    case deleteFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -32,6 +38,10 @@ enum S3ServiceError: Error, LocalizedError {
             return "Upload failed: \(detail)"
         case .folderAlreadyExists:
             return "A folder with this name already exists."
+        case .copyFailed(let detail):
+            return "Copy failed: \(detail)"
+        case .deleteFailed(let detail):
+            return "Delete failed: \(detail)"
         }
     }
 }

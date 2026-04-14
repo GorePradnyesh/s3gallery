@@ -13,6 +13,7 @@ struct BrowserGridView: View {
     @Binding var columnCount: Int
     let onSelectItem: (S3Item) -> Void
     let onAction: (S3FileItem, FileAction) -> Void
+    var onRenameFolder: ((_ name: String, _ prefix: String) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -26,8 +27,11 @@ struct BrowserGridView: View {
                                 isSelected: isSelected(item)
                             )
                             .onTapGesture {
-                                if viewModel.isSelectionMode, case .file(let fi) = item {
-                                    viewModel.toggleSelection(fi)
+                                if viewModel.isSelectionMode {
+                                    switch item {
+                                    case .file(let fi): viewModel.toggleSelection(fi)
+                                    case .folder: viewModel.toggleFolderSelection(item)
+                                    }
                                 } else {
                                     onSelectItem(item)
                                 }
@@ -35,6 +39,8 @@ struct BrowserGridView: View {
                             .contextMenu {
                                 if case .file(let fi) = item {
                                     fileContextMenu(for: fi)
+                                } else if case .folder(let name, let prefix) = item {
+                                    folderContextMenu(name: name, prefix: prefix)
                                 }
                             }
                         }
@@ -57,8 +63,19 @@ struct BrowserGridView: View {
     }
 
     private func isSelected(_ item: S3Item) -> Bool {
-        guard case .file(let fi) = item else { return false }
-        return viewModel.selectedItems.contains(fi)
+        switch item {
+        case .file(let fi): return viewModel.selectedItems.contains(fi)
+        case .folder: return viewModel.selectedFolder == item
+        }
+    }
+
+    @ViewBuilder
+    private func folderContextMenu(name: String, prefix: String) -> some View {
+        if let onRenameFolder {
+            Button { onRenameFolder(name, prefix) } label: {
+                Label("Rename", systemImage: "pencil")
+            }
+        }
     }
 
     @ViewBuilder

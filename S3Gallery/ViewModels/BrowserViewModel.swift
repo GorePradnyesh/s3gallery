@@ -158,23 +158,32 @@ final class BrowserViewModel {
 
     var isSelectionMode = false
     private(set) var selectedItems: Set<S3FileItem> = []
+    private(set) var selectedFolder: S3Item? = nil
 
     func enterSelectionMode() {
         isSelectionMode = true
         selectedItems = []
+        selectedFolder = nil
     }
 
     func exitSelectionMode() {
         isSelectionMode = false
         selectedItems = []
+        selectedFolder = nil
     }
 
     func toggleSelection(_ item: S3FileItem) {
+        selectedFolder = nil
         if selectedItems.contains(item) {
             selectedItems.remove(item)
         } else {
             selectedItems.insert(item)
         }
+    }
+
+    func toggleFolderSelection(_ item: S3Item) {
+        selectedItems = []
+        selectedFolder = (selectedFolder == item) ? nil : item
     }
 
     var canSaveSelectedToPhotos: Bool {

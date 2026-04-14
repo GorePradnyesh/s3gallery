@@ -131,4 +131,44 @@ final class S3Service: S3ServiceProtocol {
         let output = try await client.listObjectsV2(input: input)
         return (output.contents?.count ?? 0) > 0 || (output.commonPrefixes?.count ?? 0) > 0
     }
+
+    func copyObject(bucket: String, sourceKey: String, destKey: String) async throws {
+        // copySource must be "bucket/key" — percent-encode the key portion for header safety
+        let encodedKey = sourceKey.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? sourceKey
+        do {
+            _ = try await client.copyObject(input: CopyObjectInput(
+                bucket: bucket,
+                copySource: "\(bucket)/\(encodedKey)",
+                key: destKey
+            ))
+        } catch {
+            throw S3ServiceError.copyFailed(error.localizedDescription)
+        }
+    }
+
+    func deleteObject(bucket: String, key: String) async throws {
+        do {
+            _ = try await client.deleteObject(input: DeleteObjectInput(bucket: bucket, key: key))
+        } catch {
+            throw S3ServiceError.deleteFailed(error.localizedDescription)
+        }
+    }
+
+    func listAllObjects(bucket: String, prefix: String) async throws -> [String] {
+        var keys: [String] = []
+        var continuationToken: String?
+
+        repeat {
+            let input = ListObjectsV2Input(
+                bucket: bucket,
+                continuationToken: continuationToken,
+                prefix: prefix.isEmpty ? nil : prefix
+            )
+            let output = try await client.listObjectsV2(input: input)
+            keys += output.contents?.compactMap { $0.key } ?? []
+            continuationToken = output.isTruncated == true ? output.nextContinuationToken : nil
+        } while continuationToken != nil
+
+        return keys
+    }
 }

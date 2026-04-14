@@ -6,6 +6,8 @@ private enum BrowserSheet: Identifiable {
     case createFolder(BrowseState)
     case share([URL])
     case copyToFiles([URL])
+    case moveFiles(items: [S3FileItem], bucket: String, sourcePrefix: String)
+    case renameFolder(name: String, prefix: String, bucket: String)
 
     var id: String {
         switch self {
@@ -14,6 +16,8 @@ private enum BrowserSheet: Identifiable {
         case .createFolder(let state): return "createFolder-\(state.bucket)-\(state.prefix)"
         case .share: return "share"
         case .copyToFiles: return "copyToFiles"
+        case .moveFiles(let items, _, _): return "moveFiles-\(items.map(\.id).joined(separator: ","))"
+        case .renameFolder(_, let prefix, _): return "renameFolder-\(prefix)"
         }
     }
 }
@@ -77,6 +81,33 @@ struct BrowserView: View {
                         urls.forEach { fileActionService.cleanup(url: $0) }
                         activeSheet = nil
                     }
+                case .moveFiles(let items, let bucket, let sourcePrefix):
+                    MoveSheet(
+                        viewModel: MoveViewModel(
+                            filesToMove: items,
+                            bucket: bucket,
+                            sourcePrefix: sourcePrefix,
+                            s3Service: viewModel.s3Service
+                        ),
+                        onComplete: {
+                            Task {
+                                await viewModel.refresh()
+                                viewModel.exitSelectionMode()
+                            }
+                        },
+                        onDismiss: { activeSheet = nil }
+                    )
+                case .renameFolder(let name, let prefix, let bucket):
+                    RenameFolderSheet(
+                        viewModel: RenameViewModel(
+                            folderName: name,
+                            folderPrefix: prefix,
+                            bucket: bucket,
+                            s3Service: viewModel.s3Service
+                        ),
+                        onComplete: { Task { await viewModel.refresh() } },
+                        onDismiss: { activeSheet = nil }
+                    )
                 }
             }
             .alert("Action Failed", isPresented: Binding(
@@ -169,10 +200,13 @@ struct BrowserView: View {
                 SelectionActionBar(
                     selectedCount: viewModel.selectedItems.count,
                     canSaveToPhotos: viewModel.canSaveSelectedToPhotos,
+                    selectedFolder: viewModel.selectedFolder,
                     onShare: { handleBulkAction(.share) },
                     onOpenIn: { handleBulkAction(.openIn) },
                     onSaveToPhotos: { handleBulkAction(.saveToPhotos) },
-                    onCopyToFiles: { handleBulkAction(.copyToFiles) }
+                    onCopyToFiles: { handleBulkAction(.copyToFiles) },
+                    onMove: { handleBulkMove() },
+                    onRename: { handleRenameSelected() }
                 )
             }
         }
@@ -197,13 +231,18 @@ struct BrowserView: View {
 
     @ViewBuilder
     private var contentView: some View {
+        let renameHandler: ((_ name: String, _ prefix: String) -> Void)? =
+            viewModel.currentBucketHasWriteAccess == true ? { name, prefix in
+                handleRenameFolder(name: name, prefix: prefix)
+            } : nil
         switch viewMode {
         case .list:
             BrowserListView(
                 items: viewModel.sortedItems,
                 viewModel: viewModel,
                 onSelectItem: { handleSelection($0) },
-                onAction: { handleAction($1, items: [$0]) }
+                onAction: { handleAction($1, items: [$0]) },
+                onRenameFolder: renameHandler
             )
         case .grid:
             BrowserGridView(
@@ -212,7 +251,8 @@ struct BrowserView: View {
                 viewModel: viewModel,
                 columnCount: $gridColumnCount,
                 onSelectItem: { handleSelection($0) },
-                onAction: { handleAction($1, items: [$0]) }
+                onAction: { handleAction($1, items: [$0]) },
+                onRenameFolder: renameHandler
             )
         }
     }
@@ -375,6 +415,25 @@ struct BrowserView: View {
         let items = Array(viewModel.selectedItems)
         viewModel.exitSelectionMode()
         handleAction(action, items: items)
+    }
+
+    private func handleBulkMove() {
+        guard let state = viewModel.currentState, !viewModel.selectedItems.isEmpty else { return }
+        let items = Array(viewModel.selectedItems)
+        activeSheet = .moveFiles(items: items, bucket: state.bucket, sourcePrefix: state.prefix)
+    }
+
+    private func handleRenameFolder(name: String, prefix: String) {
+        guard let state = viewModel.currentState else { return }
+        activeSheet = .renameFolder(name: name, prefix: prefix, bucket: state.bucket)
+    }
+
+    private func handleRenameSelected() {
+        guard let state = viewModel.currentState,
+              let folder = viewModel.selectedFolder,
+              case .folder(let name, let prefix) = folder else { return }
+        viewModel.exitSelectionMode()
+        activeSheet = .renameFolder(name: name, prefix: prefix, bucket: state.bucket)
     }
 
     private func errorView(message: String, retry: @escaping () -> Void) -> some View {
